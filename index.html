@@ -40,10 +40,10 @@
                 <button @click="page = 'dashboard'" :class="page === 'dashboard' ? 'bg-white text-[#002366]' : 'hover:bg-blue-800'" class="w-full p-3 rounded-xl transition-all text-left font-bold text-[10px] uppercase">
                     Dashboard (แผงควบคุม)
                 </button>
-                <button @click="resetForm(); page = 'out'" :class="page === 'out' ? 'bg-white text-[#002366]' : 'hover:bg-blue-800'" class="w-full p-3 rounded-xl transition-all text-left font-bold text-[10px] uppercase">
+                <button @click="page = 'out'" :class="page === 'out' ? 'bg-white text-[#002366]' : 'hover:bg-blue-800'" class="w-full p-3 rounded-xl transition-all text-left font-bold text-[10px] uppercase">
                     Withdrawal (ใบเบิกวัสดุ)
                 </button>
-                <button @click="resetForm(); page = 'in'" :class="page === 'in' ? 'bg-white text-[#002366]' : 'hover:bg-blue-800'" class="w-full p-3 rounded-xl transition-all text-left font-bold text-[10px] uppercase">
+                <button @click="page = 'in'" :class="page === 'in' ? 'bg-white text-[#002366]' : 'hover:bg-blue-800'" class="w-full p-3 rounded-xl transition-all text-left font-bold text-[10px] uppercase">
                     Storage (ใบนำของเข้า)
                 </button>
                 <button @click="page = 'logs'" :class="page === 'logs' ? 'bg-white text-[#002366]' : 'hover:bg-blue-800'" class="w-full p-3 rounded-xl transition-all text-left font-bold text-[10px] uppercase relative">
@@ -113,12 +113,13 @@
             <div x-show="page === 'out' || page === 'in'">
                 <div id="printArea" class="max-w-5xl mx-auto bg-white p-8 md:p-12 shadow-xl border border-slate-200 relative">
                     
-                    <div class="no-print absolute top-8 right-12 flex gap-4">
-                        <label class="flex items-center gap-2 cursor-pointer bg-slate-50 px-3 py-1 rounded-lg border border-slate-200">
+                    <!-- ปรับแก้วิธีวางปุ่ม ACTUAL/RESERVE เป็นแบบ Flex-Inline บล็อกปกติ เพื่อลดปัญหาการทับซ้อนกับข้อมูลส่วนหัวกระดาษ -->
+                    <div class="no-print flex justify-end gap-4 pb-4 mb-4 border-b border-slate-100">
+                        <label class="flex items-center gap-2 cursor-pointer bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-100 transition">
                             <input type="radio" x-model="form.txnType" value="ACTUAL" class="text-orange-500 focus:ring-orange-500">
                             <span class="text-[10px] font-black uppercase text-slate-700">Actual (เบิก/รับจริง)</span>
                         </label>
-                        <label class="flex items-center gap-2 cursor-pointer bg-slate-50 px-3 py-1 rounded-lg border border-slate-200">
+                        <label class="flex items-center gap-2 cursor-pointer bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-100 transition">
                             <input type="radio" x-model="form.txnType" value="RESERVE" class="text-orange-500 focus:ring-orange-500">
                             <span class="text-[10px] font-black uppercase text-slate-700">Reserve (จองล่วงหน้า)</span>
                         </label>
@@ -157,10 +158,10 @@
                     <table class="print-table w-full mb-8 text-[11px]">
                         <thead class="bg-slate-100 font-bold uppercase text-[9px]">
                             <tr>
-                                <th class="text-left w-24">Code (รหัส)</th>
-                                <th class="text-left">Description (รายการวัสดุ)</th>
-                                <th class="text-left w-1/4">Model (รุ่นสินค้า)</th>
-                                <th class="text-center w-20">Qty (จำนวน)</th>
+                                <th class="text-left w-[22%]">Code (รหัส)</th>
+                                <th class="text-left w-[35%]">Description (รายการวัสดุ)</th>
+                                <th class="text-left w-[23%]">Model (รุ่นสินค้า)</th>
+                                <th class="text-center w-16">Qty (จำนวน)</th>
                                 <th class="text-center w-20">Unit (หน่วย)</th>
                                 <th class="text-center w-10 no-print">#</th>
                             </tr>
@@ -168,17 +169,84 @@
                         <tbody>
                             <template x-for="(row, index) in form.items" :key="index">
                                 <tr>
-                                    <td class="p-2 border">
-                                        <select x-model="row.itemId" @change="autoFillFromMaster(row)" class="w-full bg-transparent no-print font-bold outline-none cursor-pointer">
-                                            <option value="">- เลือก -</option>
-                                            <template x-for="m in inventory">
-                                                <option :value="m.id" x-text="m.itemCode + ' - ' + m.name"></option>
-                                            </template>
-                                        </select>
-                                        <p class="hidden print:block font-bold" x-text="row.itemCode || '-'"></p>
+                                    <!-- คอลัมน์ที่ 1: Code (รหัสสินค้า) - สามารถกรอกพิมพ์ค้นหา/ป้อนข้อมูลเองได้ -->
+                                    <td class="p-2 border relative" x-data="{ open: false, search: '' }">
+                                        <div class="no-print">
+                                            <input type="text" 
+                                                   x-model="row.itemCode" 
+                                                   @focus="open = true; search = row.itemCode" 
+                                                   @click.away="open = false"
+                                                   @input="open = true; search = row.itemCode; autoFillFromCodeText(row)" 
+                                                   placeholder="ค้นหา/กรอกรหัส..." 
+                                                   class="w-full bg-orange-50 p-1 rounded font-bold outline-none text-slate-700 focus:ring-1 focus:ring-orange-500 text-[11px] uppercase">
+                                            
+                                            <div x-show="open" class="absolute left-0 right-0 mt-1 bg-white border border-slate-200 rounded-lg shadow-lg max-h-48 overflow-y-auto z-50 text-left">
+                                                <template x-for="m in inventory.filter(i => !search || i.itemCode.toLowerCase().includes(search.toLowerCase()) || i.name.toLowerCase().includes(search.toLowerCase()) || i.model.toLowerCase().includes(search.toLowerCase()))" :key="m.id">
+                                                    <div @mousedown="row.itemId = m.id; autoFillFromMaster(row); open = false" 
+                                                         class="p-2 hover:bg-orange-50 cursor-pointer text-[10px] border-b last:border-0">
+                                                        <span class="font-black text-orange-500" x-text="m.itemCode"></span> - 
+                                                        <span class="font-bold text-slate-700" x-text="m.name"></span>
+                                                        <span class="text-slate-400 italic block text-[9px]" x-text="'Model: ' + m.model"></span>
+                                                    </div>
+                                                </template>
+                                            </div>
+                                        </div>
+                                        <p class="hidden print:block font-bold text-slate-700" x-text="row.itemCode || '-'"></p>
                                     </td>
-                                    <td class="p-2 border font-bold text-slate-700" x-text="row.name || '-'"></td>
-                                    <td class="p-2 border text-slate-500 italic uppercase" x-text="row.model || '-'"></td>
+
+                                    <!-- คอลัมน์ที่ 2: Description (รายการวัสดุ) - สามารถกรอกพิมพ์ค้นหา/ป้อนข้อมูลเองได้ -->
+                                    <td class="p-2 border relative" x-data="{ open: false, search: '' }">
+                                        <div class="no-print">
+                                            <input type="text" 
+                                                   x-model="row.name" 
+                                                   @focus="open = true; search = row.name" 
+                                                   @click.away="open = false"
+                                                   @input="open = true; search = row.name; autoFillFromNameText(row)" 
+                                                   placeholder="ค้นหา/กรอกรายการ..." 
+                                                   class="w-full bg-orange-50 p-1 rounded font-bold outline-none text-slate-700 focus:ring-1 focus:ring-orange-500 text-[11px] uppercase">
+                                            
+                                            <div x-show="open" class="absolute left-0 right-0 mt-1 bg-white border border-slate-200 rounded-lg shadow-lg max-h-48 overflow-y-auto z-50 text-left">
+                                                <template x-for="m in inventory.filter(i => !search || i.name.toLowerCase().includes(search.toLowerCase()) || i.itemCode.toLowerCase().includes(search.toLowerCase()) || i.model.toLowerCase().includes(search.toLowerCase()))" :key="m.id">
+                                                    <div @mousedown="row.itemId = m.id; autoFillFromMaster(row); open = false" 
+                                                         class="p-2 hover:bg-orange-50 cursor-pointer text-[10px] border-b last:border-0">
+                                                        <span class="font-bold text-slate-700" x-text="m.name"></span>
+                                                        <span class="text-orange-500 font-black block text-[9px]" x-text="m.itemCode + ' | Model: ' + m.model"></span>
+                                                    </div>
+                                                </template>
+                                            </div>
+                                        </div>
+                                        <p class="hidden print:block font-bold text-slate-700" x-text="row.name || '-'"></p>
+                                    </td>
+                                    
+                                    <!-- คอลัมน์ที่ 3: Model (รุ่นสินค้า) - สามารถกรอกพิมพ์ค้นหา/ป้อนข้อมูลเองได้ -->
+                                    <td class="p-2 border relative" x-data="{ open: false, search: '' }">
+                                        <div class="no-print">
+                                            <input type="text" 
+                                                   x-model="row.model" 
+                                                   @focus="open = true; search = row.model" 
+                                                   @click.away="open = false"
+                                                   @input="open = true; search = row.model; autoFillFromModelText(row)" 
+                                                   placeholder="ค้นหา/กรอกรุ่น..." 
+                                                   class="w-full bg-orange-50 p-1 rounded font-bold outline-none text-slate-700 focus:ring-1 focus:ring-orange-500 text-[11px] uppercase">
+                                            
+                                            <div x-show="open" class="absolute left-0 right-0 mt-1 bg-white border border-slate-200 rounded-lg shadow-lg max-h-48 overflow-y-auto z-50 text-left">
+                                                <template x-for="m in inventory.filter(i => !search || i.model.toLowerCase().includes(search.toLowerCase()) || i.itemCode.toLowerCase().includes(search.toLowerCase()) || i.name.toLowerCase().includes(search.toLowerCase()))" :key="m.id">
+                                                    <div @mousedown="row.itemId = m.id; autoFillFromMaster(row); open = false" 
+                                                         class="p-2 hover:bg-orange-50 cursor-pointer text-[10px] border-b last:border-0">
+                                                        <span class="font-bold text-slate-700" x-text="m.model"></span>
+                                                        <span class="text-orange-500 font-black block text-[9px]" x-text="m.itemCode + ' | ' + m.name"></span>
+                                                    </div>
+                                                </template>
+                                                <div x-show="inventory.filter(i => !search || i.model.toLowerCase().includes(search.toLowerCase()) || i.itemCode.toLowerCase().includes(search.toLowerCase()) || i.name.toLowerCase().includes(search.toLowerCase())).length === 0" 
+                                                     class="p-2 text-slate-400 text-center text-[10px]">
+                                                    ไม่พบข้อมูลวัสดุ
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <p class="hidden print:block font-bold text-slate-500 italic uppercase" x-text="row.model || '-'"></p>
+                                    </td>
+
+                                    <!-- คอลัมน์ที่ 4: Qty (จำนวน) -->
                                     <td class="p-2 border text-center">
                                         <input type="number" x-model.number="row.qty" min="1" 
                                                @keydown="if(event.key === '-' || event.key === 'e' || event.key === '+'){event.preventDefault();}" 
@@ -187,7 +255,18 @@
                                                class="w-full text-center bg-orange-50 no-print font-black">
                                         <p class="hidden print:block font-black text-sm" x-text="row.qty || '0'"></p>
                                     </td>
-                                    <td class="p-2 border text-center font-bold text-slate-400 uppercase" x-text="row.unit"></td>
+
+                                    <!-- คอลัมน์ที่ 5: Unit (หน่วย) - เปลี่ยนเป็น Dropdown เพื่อให้ปรับเปลี่ยนหน่วยนับของวัสดุที่กรอกเองได้อิสระ -->
+                                    <td class="p-2 border text-center font-bold text-slate-700 uppercase">
+                                        <select x-model="row.unit" class="w-full bg-transparent no-print outline-none text-center font-bold cursor-pointer">
+                                            <template x-for="un in units">
+                                                <option :value="un" x-text="un" :selected="row.unit === un"></option>
+                                            </template>
+                                        </select>
+                                        <p class="hidden print:block font-bold text-[11px]" x-text="row.unit || '-'"></p>
+                                    </td>
+
+                                    <!-- คอลัมน์ที่ 6: Action ลบรายการ -->
                                     <td class="p-2 border text-center no-print">
                                         <button @click="removeRow(index)" class="text-red-400 hover:text-red-600 font-black">✕</button>
                                     </td>

@@ -99,11 +99,11 @@ function cnesApp() {
 
         // [3] ระบบจัดการตารางแบบฟอร์มเบิกจ่ายแบบพหุรายการ
         resetForm() {
-            this.form = { user: '', site: '', txnType: 'ACTUAL', items: [{ itemId: '', itemCode: '', name: '', model: '', qty: 0, unit: '' }] };
+            this.form = { user: '', site: '', txnType: 'ACTUAL', items: [{ itemId: '', itemCode: '', name: '', model: '', qty: 0, unit: this.units[0] || 'Panel' }] };
         },
 
         addRow() {
-            this.form.items.push({ itemId: '', itemCode: '', name: '', model: '', qty: 0, unit: '' });
+            this.form.items.push({ itemId: '', itemCode: '', name: '', model: '', qty: 0, unit: this.units[0] || 'Panel' });
         },
 
         removeRow(idx) {
@@ -120,11 +120,71 @@ function cnesApp() {
             }
         },
 
+        // ค้นหาและเชื่อมโยงข้อมูลวัสดุจากข้อความของ Code ที่ผู้ใช้งานคีย์กรอกเข้ามา
+        autoFillFromCodeText(row) {
+            const master = this.inventory.find(i => i.itemCode.toUpperCase() === row.itemCode.toUpperCase());
+            if (master) {
+                row.itemId = master.id;
+                row.itemCode = master.itemCode;
+                row.name = master.name;
+                row.model = master.model;
+                row.unit = master.unit;
+            } else {
+                row.itemId = ''; // เป็นค่าว่างเพื่อส่งต่อให้สิทธิ์คีย์แมนนวลแบบมี ID ชั่วคราวต่อไป
+            }
+        },
+
+        // ค้นหาและเชื่อมโยงข้อมูลวัสดุจากข้อความของ Description ที่ผู้ใช้งานคีย์กรอกเข้ามา
+        autoFillFromNameText(row) {
+            const master = this.inventory.find(i => i.name.toUpperCase() === row.name.toUpperCase());
+            if (master) {
+                row.itemId = master.id;
+                row.itemCode = master.itemCode;
+                row.name = master.name;
+                row.model = master.model;
+                row.unit = master.unit;
+            } else {
+                row.itemId = '';
+            }
+        },
+
+        // ค้นหาและเชื่อมโยงข้อมูลวัสดุจากข้อความของ Model ที่ผู้ใช้งานคีย์กรอกเข้ามา
+        autoFillFromModelText(row) {
+            const master = this.inventory.find(i => i.model.toUpperCase() === row.model.toUpperCase());
+            if (master) {
+                row.itemId = master.id;
+                row.itemCode = master.itemCode;
+                row.name = master.name;
+                row.model = master.model;
+                row.unit = master.unit;
+            } else {
+                row.itemId = '';
+            }
+        },
+
         // [4] การบันทึกส่งเรื่องร้องขอเบิกจ่ายวัสดุอุปกรณ์
         submitTransaction() {
-            if(!this.form.user || this.form.items.some(i => !i.itemId || i.qty <= 0)) {
-                alert('กรุณากรอกชื่อผู้เบิกและเลือกรหัสวัสดุให้ครบถ้วน!'); return;
+            // ปรับแต่งการตรวจสอบข้อมูล: ยินยอมให้สามารถพิมพ์ระบุรายการที่ไม่มีในระบบสต๊อกหลักส่งอนุมัติได้
+            const invalid = this.form.items.some(i => {
+                const codeFilled = i.itemCode && i.itemCode.trim();
+                const nameFilled = i.name && i.name.trim();
+                const qtyValid = i.qty > 0;
+                return !codeFilled || !nameFilled || !qtyValid;
+            });
+
+            if (!this.form.user || invalid) {
+                alert('กรุณากรอกชื่อผู้เบิก รหัสวัสดุ ชื่อวัสดุ และจำนวนให้ถูกต้องครบถ้วน!'); return;
             }
+
+            // จัดการข้อมูลไอเทมที่กรอกเข้ามาด้วยตนเองโดยสร้าง ID ชั่วคราว และดึงหน่วยนับพื้นฐานเพื่อความปลอดภัยของสต๊อก
+            this.form.items.forEach((item, idx) => {
+                if (!item.itemId) {
+                    item.itemId = `TEMP-${Date.now()}-${idx}`;
+                }
+                if (!item.unit) {
+                    item.unit = this.units[0] || 'Panel';
+                }
+            });
 
             this.logs.unshift({
                 id: Date.now(),
@@ -141,6 +201,7 @@ function cnesApp() {
 
             this.saveData();
             alert('บันทึกสำเร็จ! กรุณารอ Admin อนุมัติในหน้า Logs');
+            this.resetForm(); // เคลียร์ฟอร์มให้สะอาดเพื่อรองรับการคีย์ข้อมูลในครั้งถัดไป
             this.page = 'logs';
         },
 
@@ -151,6 +212,9 @@ function cnesApp() {
 
             if (log.type === 'OUT' && log.txnType === 'ACTUAL') {
                 for (let row of log.items) {
+                    // หากเป็นรายการคีย์เขียนมาเองข้างนอก จะไม่มีผลต่อยอดคงคลังหลักเพื่อความปลอดภัย
+                    if (row.itemId && row.itemId.toString().startsWith('TEMP-')) continue;
+                    
                     const inv = this.inventory.find(i => i.id == row.itemId);
                     if (inv && inv.qty < row.qty) {
                         alert(`ไม่สามารถอนุมัติได้: วัสดุ ${row.itemCode} ในสต๊อกไม่พอ!`); 
@@ -160,6 +224,8 @@ function cnesApp() {
             }
 
             log.items.forEach(row => {
+                if (row.itemId && row.itemId.toString().startsWith('TEMP-')) return;
+                
                 const inv = this.inventory.find(i => i.id == row.itemId);
                 if (inv) {
                     const q = parseInt(row.qty);
@@ -187,6 +253,8 @@ function cnesApp() {
             // ตรวจสอบสต๊อกจริงก่อนว่าเพียงพอสำหรับการเบิกจ่ายจริงหรือไม่
             if (log.type === 'OUT') {
                 for (let row of log.items) {
+                    if (row.itemId && row.itemId.toString().startsWith('TEMP-')) continue;
+                    
                     const inv = this.inventory.find(i => i.id == row.itemId);
                     if (inv && inv.qty < row.qty) {
                         alert(`ไม่สามารถเบิกจ่ายจริงได้: วัสดุ ${row.itemCode} ในสต๊อกไม่พอ!`); 
@@ -197,6 +265,8 @@ function cnesApp() {
 
             // คืนยอดจอง แล้วดำเนินการหัก/เพิ่มจำนวนในคลังสินค้าสต๊อกจริง
             log.items.forEach(row => {
+                if (row.itemId && row.itemId.toString().startsWith('TEMP-')) return;
+                
                 const inv = this.inventory.find(i => i.id == row.itemId);
                 if (inv) {
                     const q = parseInt(row.qty);
@@ -224,6 +294,8 @@ function cnesApp() {
             // หากได้รับการอนุมัติ (APPROVED) ไปแล้ว ต้องคืนค่าปรับปรุงยอดก่อนยกเลิก
             if (log.status === 'APPROVED') {
                 log.items.forEach(row => {
+                    if (row.itemId && row.itemId.toString().startsWith('TEMP-')) return;
+                    
                     const inv = this.inventory.find(i => i.id == row.itemId);
                     if (inv) {
                         const q = parseInt(row.qty);
@@ -263,6 +335,8 @@ function cnesApp() {
 
                         // ปรับลดยอดจองออกจากการคิดคำนวณในระบบและหน้า Dashboard
                         log.items.forEach(row => {
+                            if (row.itemId && row.itemId.toString().startsWith('TEMP-')) return;
+                            
                             const inv = this.inventory.find(i => i.id == row.itemId);
                             if (inv) {
                                 const q = parseInt(row.qty);
