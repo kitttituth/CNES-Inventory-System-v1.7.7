@@ -16,7 +16,7 @@ function cnesApp() {
         form: { user: '', site: '', txnType: 'ACTUAL', items: [] },
         newCat: '',
         newUnit: '',
-        newItem: { itemCode: '', name: '', model: '', category: '', unit: '', qty: 0 },
+        newItem: { itemCode: '', name: '', model: '', location: '', category: '', unit: '', qty: 0 }, // เพิ่มฟิลด์ location ในวัสดุใหม่
         printData: null,
 
         // [1] โหลดข้อมูลเริ่มต้น (อัปเกรดฐานข้อมูลสู่คีย์เซฟตี้ v1.7.7 ป้องกันจอขาว)
@@ -226,6 +226,8 @@ function cnesApp() {
                 }
             }
 
+            const nowStr = new Date().toLocaleString('th-TH'); // วันเวลาที่ทำธุรกรรมจริงสำเร็จ
+
             log.items.forEach(row => {
                 if (row.itemId && row.itemId.toString().startsWith('TEMP-')) return;
                 
@@ -239,6 +241,8 @@ function cnesApp() {
                         if (log.txnType === 'ACTUAL') inv.qty += q;
                         else inv.reserve_in = (inv.reserve_in || 0) + q;
                     }
+                    // อัปเดตวันที่มีการเคลื่อนไหวสินค้า
+                    inv.lastUpdated = nowStr;
                 }
             });
 
@@ -266,6 +270,8 @@ function cnesApp() {
                 }
             }
 
+            const nowStr = new Date().toLocaleString('th-TH');
+
             // คืนยอดจอง แล้วดำเนินการหัก/เพิ่มจำนวนในคลังสินค้าสต๊อกจริง
             log.items.forEach(row => {
                 if (row.itemId && row.itemId.toString().startsWith('TEMP-')) return;
@@ -280,6 +286,8 @@ function cnesApp() {
                         inv.reserve_in = Math.max(0, (inv.reserve_in || 0) - q);
                         inv.qty += q;
                     }
+                    // อัปเดตวันที่มีการเคลื่อนไหวสินค้าจริง
+                    inv.lastUpdated = nowStr;
                 }
             });
 
@@ -293,6 +301,8 @@ function cnesApp() {
             if (!confirm('ยืนยันการยกเลิกรายการนี้หรือไม่? สต๊อกทั้งหมดที่เกี่ยวข้องจะถูกปรับปรุงคืนค่าเดิม')) return;
             const log = this.logs.find(l => l.id === logId);
             if (!log) return;
+
+            const nowStr = new Date().toLocaleString('th-TH');
 
             // หากได้รับการอนุมัติ (APPROVED) ไปแล้ว ต้องคืนค่าปรับปรุงยอดก่อนยกเลิก
             if (log.status === 'APPROVED') {
@@ -315,6 +325,8 @@ function cnesApp() {
                                 inv.reserve_in = Math.max(0, (inv.reserve_in || 0) - q); // คืนยอดจอง
                             }
                         }
+                        // อัปเดตวันที่มีการยกเลิกและนำของคืนคลังสินค้า
+                        inv.lastUpdated = nowStr;
                     }
                 });
             }
@@ -329,6 +341,7 @@ function cnesApp() {
             let updated = false;
             const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000;
             const now = Date.now();
+            const nowStr = new Date().toLocaleString('th-TH');
 
             this.logs.forEach(log => {
                 if (log.txnType === 'RESERVE' && log.status === 'APPROVED') {
@@ -348,6 +361,7 @@ function cnesApp() {
                                 } else {
                                     inv.reserve_in = Math.max(0, (inv.reserve_in || 0) - q);
                                 }
+                                inv.lastUpdated = nowStr;
                             }
                         });
                         updated = true;
@@ -404,18 +418,21 @@ function cnesApp() {
 
         addMaterial() {
             if(!this.newItem.name || !this.newItem.itemCode) return alert('กรุณาระบุรหัสและชื่อวัสดุ!');
+            const nowStr = new Date().toLocaleString('th-TH'); // วันแรกเข้า
             this.inventory.push({
                 id: Date.now(),
                 itemCode: this.newItem.itemCode.toUpperCase(),
                 name: this.newItem.name.toUpperCase(),
                 model: this.newItem.model.toUpperCase() || 'N/A',
+                location: (this.newItem.location || '').toUpperCase() || 'N/A', // เก็บบันทึกข้อมูลตำแหน่งจัดเก็บ
                 category: this.newItem.category,
                 unit: this.newItem.unit || this.units[0],
                 qty: parseInt(this.newItem.qty) || 0,
                 reserve_out: 0,
-                reserve_in: 0
+                reserve_in: 0,
+                lastUpdated: nowStr // บันทึกวันแรกเข้าเป็นวันเวลาเริ่มต้น
             });
-            this.newItem = { itemCode: '', name: '', model: '', category: '', unit: this.units[0], qty: 0 };
+            this.newItem = { itemCode: '', name: '', model: '', location: '', category: '', unit: this.units[0], qty: 0 };
             this.saveData();
         },
 
@@ -469,9 +486,9 @@ function cnesApp() {
         downloadCSV() {
             if (this.inventory.length === 0) return alert('ไม่มีข้อมูลสำหรับส่งออก!');
             let csv = '\uFEFF'; 
-            csv += 'Code (รหัส),Material (ชื่อวัสดุ),Model (รุ่น),Category (หมวดหมู่),Balance (คงเหลือ),Reserve (จอง),Unit (หน่วย)\n';
+            csv += 'Code (รหัส),Material (ชื่อวัสดุ),Model (รุ่น),Location (ตำแหน่งจัดเก็บ),Category (หมวดหมู่),Balance (คงเหลือ),Reserve (จอง),Unit (หน่วย),Last Updated (อัปเดตล่าสุดเมื่อ)\n';
             this.inventory.forEach(item => {
-                csv += `"${item.itemCode}","${item.name}","${item.model}","${item.category}",${item.qty},${item.reserve_out || 0},"${item.unit}"\n`;
+                csv += `"${item.itemCode}","${item.name}","${item.model}","${item.location || '-'}","${item.category}",${item.qty},${item.reserve_out || 0},"${item.unit}","${item.lastUpdated || '-'}"\n`;
             });
             const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement('a');
@@ -490,7 +507,7 @@ function cnesApp() {
             localStorage.setItem('cnes_v177_cats', JSON.stringify(this.categories));
             localStorage.setItem('cnes_v177_units', JSON.stringify(this.units));
 
-            // ยิงข้อมูลอัปเดตไปบันทึกเขียนทับและเก็บบบนไฟล์ data.json บนหลังบ้านเพื่อให้เครื่องอื่นดึงข้อมูลไปใช้ซิงก์กันได้
+            // ยิงข้อมูลอัปเดตไปบันทึกเขียนทับและเก็บบนไฟล์ data.json บนหลังบ้านเพื่อให้เครื่องอื่นดึงข้อมูลไปใช้ซิงก์กันได้
             const payload = {
                 inventory: this.inventory,
                 logs: this.logs,
