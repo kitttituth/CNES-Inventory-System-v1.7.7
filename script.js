@@ -4,10 +4,6 @@ function cnesApp() {
         isLoggedIn: false,
         userRole: '',
         loginPin: '',
-        loginUsername: '',
-        loggedInSessions: [],
-        currentSessionId: null,
-        showLoginOverlay: false,
         page: 'dashboard',
         
         // --- ฐานข้อมูลหลัก ---
@@ -30,34 +26,6 @@ function cnesApp() {
             try { this.logs = JSON.parse(localStorage.getItem('cnes_v177_logs')) || []; } catch(e) { this.logs = []; }
             try { this.categories = JSON.parse(localStorage.getItem('cnes_v177_cats')) || []; } catch(e) { this.categories = []; }
             try { this.units = JSON.parse(localStorage.getItem('cnes_v177_units')) || []; } catch(e) { this.units = []; }
-
-            // โหลดเซสชันการเข้าสู่ระบบแบบหลายบัญชี
-            try { 
-                this.loggedInSessions = JSON.parse(localStorage.getItem('cnes_v177_sessions')) || []; 
-            } catch(e) { 
-                this.loggedInSessions = []; 
-            }
-            this.currentSessionId = localStorage.getItem('cnes_v177_current_session_id') || null;
-
-            // ตรวจสอบ fallback สำหรับกรณีข้อมูลเก่าที่เป็น single login
-            if (this.loggedInSessions.length === 0) {
-                const legacyRole = localStorage.getItem('cnes_v177_role');
-                if (legacyRole) {
-                    const defaultName = legacyRole === 'admin' ? 'Admin CNES' : 'User CNES';
-                    const legacySession = {
-                        id: 'legacy-' + Date.now(),
-                        username: defaultName,
-                        role: legacyRole
-                    };
-                    this.loggedInSessions.push(legacySession);
-                    this.currentSessionId = legacySession.id;
-                    localStorage.setItem('cnes_v177_sessions', JSON.stringify(this.loggedInSessions));
-                    localStorage.setItem('cnes_v177_current_session_id', legacySession.id);
-                }
-            }
-
-            // ตั้งค่าสถานะการล็อกอินและบทบาทปัจจุบันจากเซสชันที่เลือกอยู่
-            this.updateActiveSessionState();
 
             // รันเรียกข้อมูลล่าสุดของส่วนกลางจาก data.json หลังบ้านมาซิงก์ทับเพื่อให้อุปกรณ์ทุกเครื่องแสดงยอดตรงกัน
             try {
@@ -93,113 +61,27 @@ function cnesApp() {
             this.checkExpiredReservations();
             
             this.resetForm();
+            
+            // ปรับไปเช็กเซสชันจาก sessionStorage เพื่อให้สามารถเปิดล็อกอิน User และ Admin ทิ้งไว้พร้อมกันคนละแท็บได้
+            const savedRole = sessionStorage.getItem('cnes_v177_role');
+            if(savedRole) { this.isLoggedIn = true; this.userRole = savedRole; }
         },
 
-        // อัปเดตสถานะเซสชันการล็อกอินปัจจุบัน
-        updateActiveSessionState() {
-            if (this.loggedInSessions.length > 0) {
-                let active = this.loggedInSessions.find(s => s.id === this.currentSessionId);
-                if (!active) {
-                    active = this.loggedInSessions[0];
-                    this.currentSessionId = active.id;
-                    localStorage.setItem('cnes_v177_current_session_id', active.id);
-                }
-                this.isLoggedIn = true;
-                this.userRole = active.role;
-                localStorage.setItem('cnes_v177_role', this.userRole);
-                if (!this.form.user) {
-                    this.form.user = active.username;
-                }
-            } else {
-                this.isLoggedIn = false;
-                this.userRole = '';
-                this.currentSessionId = null;
-                localStorage.removeItem('cnes_v177_current_session_id');
-                localStorage.removeItem('cnes_v177_role');
-            }
-        },
-
-        // [2] ระบบตรวจสอบ Login แบบรองรับหลายบัญชีและพาสเวิร์ด
+        // [2] ระบบตรวจสอบ Login
         handleLogin() {
-            if (!this.loginUsername || !this.loginUsername.trim()) {
-                alert('กรุณากรอกชื่อผู้ใช้งาน / Name!');
-                return;
-            }
-            let role = '';
-            if (this.loginPin === 'admincnes111111') { 
-                role = 'admin'; 
-            } else if (this.loginPin === '111111') { 
-                role = 'user'; 
-            } else { 
-                alert('PIN ไม่ถูกต้อง!'); 
-                return; 
-            }
-
-            const username = this.loginUsername.trim();
-            // ตรวจสอบว่าบัญชีนี้เข้าสู่ระบบอยู่แล้วหรือไม่
-            let existing = this.loggedInSessions.find(s => s.username.toLowerCase() === username.toLowerCase() && s.role === role);
-            if (!existing) {
-                const newSession = {
-                    id: 'sess-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4),
-                    username: username,
-                    role: role
-                };
-                this.loggedInSessions.push(newSession);
-                this.currentSessionId = newSession.id;
-            } else {
-                this.currentSessionId = existing.id;
-            }
-
-            localStorage.setItem('cnes_v177_sessions', JSON.stringify(this.loggedInSessions));
-            localStorage.setItem('cnes_v177_current_session_id', this.currentSessionId);
-            
-            this.updateActiveSessionState();
-            
-            this.loginUsername = '';
+            if (this.loginPin === 'admincnes111111') { this.userRole = 'admin'; }
+            else if (this.loginPin === '111111') { this.userRole = 'user'; }
+            else { alert('PIN ไม่ถูกต้อง!'); return; }
+            this.isLoggedIn = true;
+            // บันทึกสถานะบทบาทแยกระดับ Tab ด้วย sessionStorage ทำให้เปิดสลับแท็บรัน User / Admin ได้อิสระ
+            sessionStorage.setItem('cnes_v177_role', this.userRole);
             this.loginPin = '';
-            
-            const active = this.loggedInSessions.find(s => s.id === this.currentSessionId);
-            if (active) {
-                this.form.user = active.username;
-            }
-            this.showLoginOverlay = false; 
         },
 
-        // สลับบัญชีที่ถูกเลือกทำงานอยู่ ณ ปัจจุบัน
-        switchSession(sessionId) {
-            this.currentSessionId = sessionId;
-            localStorage.setItem('cnes_v177_current_session_id', sessionId);
-            this.updateActiveSessionState();
-            
-            const active = this.loggedInSessions.find(s => s.id === sessionId);
-            if (active) {
-                this.form.user = active.username;
-            }
-        },
-
-        // ลบเซสชันที่ระบุออกจากระบบ (Sign Out เฉพาะคน)
-        logoutSession(sessionId) {
-            this.loggedInSessions = this.loggedInSessions.filter(s => s.id !== sessionId);
-            localStorage.setItem('cnes_v177_sessions', JSON.stringify(this.loggedInSessions));
-            
-            if (this.currentSessionId === sessionId) {
-                this.currentSessionId = this.loggedInSessions.length > 0 ? this.loggedInSessions[0].id : null;
-                localStorage.setItem('cnes_v177_current_session_id', this.currentSessionId || '');
-            }
-            
-            this.updateActiveSessionState();
-        },
-
-        // ออกจากระบบบัญชีปัจจุบันที่สลับเปิดหน้าจออยู่
         logout() {
-            if (this.currentSessionId) {
-                this.logoutSession(this.currentSessionId);
-            } else {
-                this.loggedInSessions = [];
-                localStorage.removeItem('cnes_v177_sessions');
-                localStorage.removeItem('cnes_v177_current_session_id');
-                this.updateActiveSessionState();
-            }
+            this.isLoggedIn = false;
+            this.userRole = '';
+            sessionStorage.removeItem('cnes_v177_role');
         },
 
         // กรองข้อมูลและจัดเรียงรหัสวัสดุจากน้อยไปมากแยกตามกลุ่มหมวดหมู่สินค้าในหน้า Dashboard
@@ -220,9 +102,7 @@ function cnesApp() {
 
         // [3] ระบบจัดการตารางแบบฟอร์มเบิกจ่ายแบบพหุรายการ
         resetForm() {
-            const active = this.loggedInSessions.find(s => s.id === this.currentSessionId);
-            const defaultUser = active ? active.username : '';
-            this.form = { user: defaultUser, site: '', txnType: 'ACTUAL', items: [{ itemId: '', itemCode: '', name: '', model: '', qty: 0, unit: this.units[0] || 'Panel' }] };
+            this.form = { user: '', site: '', txnType: 'ACTUAL', items: [{ itemId: '', itemCode: '', name: '', model: '', qty: 0, unit: this.units[0] || 'Panel' }] };
         },
 
         addRow() {
@@ -287,6 +167,7 @@ function cnesApp() {
 
         // [4] การบันทึกส่งเรื่องร้องขอเบิกจ่ายวัสดุอุปกรณ์
         submitTransaction() {
+            // ปรับแต่งการตรวจสอบข้อมูล: ยินยอมให้สามารถพิมพ์ระบุรายการที่ไม่มีในระบบสต๊อกหลักส่งอนุมัติได้
             const invalid = this.form.items.some(i => {
                 const codeFilled = i.itemCode && i.itemCode.trim();
                 const nameFilled = i.name && i.name.trim();
@@ -334,6 +215,7 @@ function cnesApp() {
 
             if (log.type === 'OUT' && log.txnType === 'ACTUAL') {
                 for (let row of log.items) {
+                    // หากเป็นรายการคีย์เขียนมาเองข้างนอก จะไม่มีผลต่อยอดคงคลังหลักเพื่อความปลอดภัย
                     if (row.itemId && row.itemId.toString().startsWith('TEMP-')) continue;
                     
                     const inv = this.inventory.find(i => i.id == row.itemId);
@@ -371,6 +253,7 @@ function cnesApp() {
             const log = this.logs.find(l => l.id === logId);
             if (!log) return;
 
+            // ตรวจสอบสต๊อกจริงก่อนว่าเพียงพอสำหรับการเบิกจ่ายจริงหรือไม่
             if (log.type === 'OUT') {
                 for (let row of log.items) {
                     if (row.itemId && row.itemId.toString().startsWith('TEMP-')) continue;
@@ -383,6 +266,7 @@ function cnesApp() {
                 }
             }
 
+            // คืนยอดจอง แล้วดำเนินการหัก/เพิ่มจำนวนในคลังสินค้าสต๊อกจริง
             log.items.forEach(row => {
                 if (row.itemId && row.itemId.toString().startsWith('TEMP-')) return;
                 
@@ -410,6 +294,7 @@ function cnesApp() {
             const log = this.logs.find(l => l.id === logId);
             if (!log) return;
 
+            // หากได้รับการอนุมัติ (APPROVED) ไปแล้ว ต้องคืนค่าปรับปรุงยอดก่อนยกเลิก
             if (log.status === 'APPROVED') {
                 log.items.forEach(row => {
                     if (row.itemId && row.itemId.toString().startsWith('TEMP-')) return;
@@ -451,6 +336,7 @@ function cnesApp() {
                     if (now - approvedTime > thirtyDaysMs) {
                         log.status = 'EXPIRED';
 
+                        // ปรับลดยอดจองออกจากการคิดคำนวณในระบบและหน้า Dashboard
                         log.items.forEach(row => {
                             if (row.itemId && row.itemId.toString().startsWith('TEMP-')) return;
                             
@@ -598,11 +484,13 @@ function cnesApp() {
 
         // ฟังก์ชันระบบเซฟและอัปเดตข้อมูลทับร่วมกันลงในเบราว์เซอร์ และเก็บเป็น data.json บนเซิร์ฟเวอร์ปลายทาง
         saveData() {
+            // บันทึกสำรองลง LocalStorage (ภายในเบราว์เซอร์เครื่องปัจจุบัน)
             localStorage.setItem('cnes_v177_inv', JSON.stringify(this.inventory));
             localStorage.setItem('cnes_v177_logs', JSON.stringify(this.logs));
             localStorage.setItem('cnes_v177_cats', JSON.stringify(this.categories));
             localStorage.setItem('cnes_v177_units', JSON.stringify(this.units));
 
+            // ยิงข้อมูลอัปเดตไปบันทึกเขียนทับและเก็บบบนไฟล์ data.json บนหลังบ้านเพื่อให้เครื่องอื่นดึงข้อมูลไปใช้ซิงก์กันได้
             const payload = {
                 inventory: this.inventory,
                 logs: this.logs,
