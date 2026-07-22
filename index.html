@@ -4,14 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CNES Inventory System v1.7.7</title>
-    <!-- เรียกใช้ Tailwind CSS และ Alpine.js เพื่อควบคุม UI และสแต็กของคลาสสิทธิ์ -->
+    <!-- โหลดไลบรารีสไตล์ผ่าน CDN ควบคุมการจัดวางวัตถุให้ยืดหยุ่นในอุปกรณ์เคลื่อนที่ -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <script src="script.js"></script>
 </head>
 <body class="bg-slate-50 font-sans antialiased text-slate-800" x-data="cnesApp()" x-init="initData()">
 
-    <!-- [1] หน้าจอการป้อนรหัส PIN เข้าสู่ระบบ -->
+    <!-- [1] หน้าจอระบุรหัส PIN เพื่อลงชื่อเข้าใช้ระบบ (ล็อกอินเดิม) -->
     <template x-if="!isLoggedIn">
         <div class="min-h-screen flex items-center justify-center bg-slate-950 p-4">
             <div class="max-w-md w-full bg-white rounded-2xl shadow-xl border border-slate-100 p-8 space-y-6">
@@ -32,11 +32,11 @@
         </div>
     </template>
 
-    <!-- [2] หน้าหลักแสดงผลระบบหลังเข้าสู่ระบบ -->
+    <!-- [2] หน้าจอแผงควบคุมหลักคลังสินค้าหลังจากสิทธิ์ผ่านสำเร็จ -->
     <template x-if="isLoggedIn">
         <div class="min-h-screen flex flex-col md:flex-row">
             
-            <!-- Mobile Navigation Bar (แสดงเฉพาะหน้าจอมือถือและสมาร์ทโฟน) -->
+            <!-- Mobile Navigation Bar Header (แสดงบนมือถือเพื่อรองรับ Hamburger สไลด์เมนูด้านซ้าย) -->
             <header class="bg-slate-950 text-white flex items-center justify-between p-4 md:hidden fixed top-0 left-0 right-0 z-40 shadow-md">
                 <span class="text-base font-extrabold tracking-widest">CNES STOCK</span>
                 <button @click="sidebarOpen = !sidebarOpen" class="p-2 text-white hover:bg-slate-800 rounded">
@@ -46,7 +46,7 @@
                 </button>
             </header>
 
-            <!-- Left Navigation Sidebar (พับเก็บและขยายออกแบบ Responsive ทั่วถึงทุกขนาดอุปกรณ์) -->
+            <!-- Navigation Sidebar (ปรับสไตล์ให้สลับพับเก็บ-ขยายออกอัตโนมัติเมื่อขนาดหน้าจอเปลี่ยนไป) -->
             <aside class="w-64 bg-slate-950 text-white flex flex-col justify-between h-screen fixed left-0 top-0 z-50 transition-transform duration-300 md:translate-x-0"
                    :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'">
                 
@@ -57,7 +57,7 @@
                     </div>
                     <nav class="flex flex-col space-y-1">
                         <button @click="page = 'dashboard'; sidebarOpen = false" :class="page === 'dashboard' ? 'bg-blue-600 text-white' : 'text-slate-300 hover:bg-slate-900'" class="flex items-center space-x-3 px-4 py-3 rounded-lg text-left text-sm transition-colors">
-                            <span>📊 แดชบอร์ดหลัก (Dashboard)</span>
+                            <span>📊 แดชบอร์ดคลังหลัก (Dashboard)</span>
                         </button>
                         <button @click="page = 'in'; sidebarOpen = false" :class="page === 'in' ? 'bg-blue-600 text-white' : 'text-slate-300 hover:bg-slate-900'" class="flex items-center space-x-3 px-4 py-3 rounded-lg text-left text-sm transition-colors">
                             <span>📥 นำเข้าสินค้า (Receive)</span>
@@ -68,13 +68,13 @@
                     </nav>
                 </div>
 
-                <!-- Bottom Menu Section: ย้าย Log มาอยู่ด้านล่างซ้าย (เหนือ Settings) และปุ่มแสดงบทบาทสิทธิ์/คู่มือการกรอกที่ล่างสุด -->
+                <!-- Bottom Sidebar Section: ย้าย Logs ขึ้นมาอยู่ด้านบนของปุ่ม Settings และปุ่ม Avatar เปิดคู่มือการใช้ล่างสุด -->
                 <div class="p-4 border-t border-slate-900 space-y-3">
                     
-                    <!-- 2. Logs ย้ายลงมาตรงนี้ (เหนือปุ่ม Settings) -->
+                    <!-- 2. ปุ่มเมนูประวัติการทำรายการ (Logs) ย้ายมาด้านล่าง (ตำแหน่งเหนือปุ่ม Settings) -->
                     <button @click="page = 'logs'; sidebarOpen = false" :class="page === 'logs' ? 'bg-blue-600 text-white' : 'text-slate-300 hover:bg-slate-900'" class="w-full flex items-center justify-between px-4 py-3 rounded-lg text-left text-sm transition-colors">
                         <span class="flex items-center space-x-3">
-                            <span>📋 ประวัติทำรายการ (Logs)</span>
+                            <span>📋 ประวัติประมวลผล (Logs)</span>
                         </span>
                         <template x-if="getPendingCount() > 0">
                             <span class="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full font-bold" x-text="getPendingCount()"></span>
@@ -82,18 +82,18 @@
                     </button>
                     
                     <button @click="page = 'settings'; sidebarOpen = false" :class="page === 'settings' ? 'bg-blue-600 text-white' : 'text-slate-300 hover:bg-slate-900'" class="w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left text-sm transition-colors">
-                        <span>⚙️ ตั้งค่าคลังสินค้า (Settings)</span>
+                        <span>⚙️ จัดการคลังระบบ (Settings)</span>
                     </button>
 
-                    <!-- 1. ปุ่มแสดงบทบาทและไอคอน (Avatar) สำหรับเปิดคู่มือการกรอกข้อมูลของ User ที่ล่างสุดของเมนู -->
+                    <!-- 1. ปุ่มแสดงบทบาท (Avatar) มุมซ้ายล่างสุด สำหรับเปิดดูคู่มือช่วยเหลือ User -->
                     <div class="pt-3 border-t border-slate-900 flex items-center justify-between">
-                        <button @click="userModalOpen = true; sidebarOpen = false" class="flex items-center space-x-3 text-left hover:opacity-85 transition-opacity" title="เปิดดูคู่มือช่วยเหลือ">
+                        <button @click="userModalOpen = true; sidebarOpen = false" class="flex items-center space-x-3 text-left hover:opacity-85 transition-opacity" title="เปิดดูคู่มือช่วยเหลือสำหรับพนักงาน">
                             <div class="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-black text-sm border-2 border-slate-800 shadow">
                                 <span x-text="userRole === 'admin' ? 'AD' : 'US'"></span>
                             </div>
                             <div>
                                 <p class="text-xs font-bold leading-tight" x-text="userRole === 'admin' ? 'Admin CNES' : 'User CNES'"></p>
-                                <span class="text-[10px] text-slate-400 font-semibold underline decoration-blue-500">📖 คู่มือการกรอก</span>
+                                <span class="text-[10px] text-slate-400 font-semibold underline decoration-blue-500">📖 คู่มือช่วยเหลือ</span>
                             </div>
                         </button>
                         <button @click="logout()" class="text-slate-400 hover:text-red-400 transition-colors" title="ออกจากระบบ">
@@ -103,23 +103,23 @@
                 </div>
             </aside>
 
-            <!-- พื้นหลังเบลอเมื่อเปิด Sidebar บนหน้าจอมือถือ -->
+            <!-- พื้นหลังสีดำจางเมื่อเมนูบนสไตล์โทรศัพท์ถูกสไลด์เปิด -->
             <div x-show="sidebarOpen" @click="sidebarOpen = false" class="fixed inset-0 bg-black/60 z-40 md:hidden" x-transition></div>
 
-            <!-- หน้าต่างแสดงเนื้อหาทางขวา (Main Panel) -->
+            <!-- แผงหลักเนื้อหาด้านขวา (Main Panel) -->
             <main class="flex-1 md:pl-64 pt-16 md:pt-0 min-h-screen">
                 <div class="p-4 md:p-8 space-y-6">
                     
-                    <!-- [A] บล็อกการแสดงผล Dashboard -->
+                    <!-- [A] หน้าแสดงแผงตรวจสอบสินค้าแดชบอร์ดหลัก (Dashboard) -->
                     <template x-if="page === 'dashboard'">
                         <div class="space-y-6">
                             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                                 <div>
                                     <h2 class="text-2xl font-black text-slate-800">📊 ตรวจเช็คปริมาณสต๊อกหลัก (Dashboard)</h2>
-                                    <p class="text-xs text-slate-500">ระบบอัปเดตแบบเรียลไทม์ภายในบริษัท ซีเอ็นอีเอส คอร์ปอเรชั่น จำกัด</p>
+                                    <p class="text-xs text-slate-500">ระบบประมวลผลติดตามยอดคลังพัสดุแบบเรียลไทม์ CNES Corporation</p>
                                 </div>
                                 <button @click="downloadCSV()" class="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-lg text-sm font-bold flex items-center justify-center gap-2 shadow-sm transition-colors">
-                                    📥 ส่งออกรายงาน CSV
+                                    📥 ส่งออกข้อมูลทั้งหมด (CSV)
                                 </button>
                             </div>
 
@@ -133,13 +133,19 @@
                                         <div class="divide-y divide-slate-100 max-h-96 overflow-y-auto flex-1">
                                             <template x-for="item in getInventoryByCategory(cat)" :key="item.id">
                                                 <div class="p-4 hover:bg-slate-50 transition-colors flex justify-between items-center">
-                                                    <div class="space-y-1 pr-3">
+                                                    <div class="space-y-1.5 pr-3">
                                                         <div class="flex items-center gap-2">
                                                             <span class="text-[10px] font-mono font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded" x-text="item.itemCode"></span>
-                                                            <span class="text-[10px] text-slate-400" x-text="'คลัง: ' + (item.location || 'N/A')"></span>
+                                                            <span class="text-[10px] text-slate-400" x-text="'ชั้นเก็บ: ' + (item.location || 'N/A')"></span>
                                                         </div>
                                                         <p class="font-bold text-slate-800 text-sm" x-text="item.name"></p>
                                                         <p class="text-xs text-slate-400" x-text="'รุ่น: ' + item.model"></p>
+                                                        
+                                                        <!-- 4. เพิ่มการแสดงผลวันที่นำพัสดุเข้าคลังครั้งแรก และวันที่มีการหยิบจับ/เคลื่อนไหวล่าสุดย้อนหลัง -->
+                                                        <div class="text-[10px] text-slate-400 space-y-0.5 bg-slate-50 p-1.5 rounded border border-slate-100">
+                                                            <p x-text="'📅 นำเข้าครั้งแรก: ' + new Date(item.id).toLocaleString('th-TH')"></p>
+                                                            <p x-text="'🔄 ขยับเขยื้อนล่าสุด: ' + (item.lastUpdated || '-')"></p>
+                                                        </div>
                                                     </div>
                                                     <div class="text-right flex-shrink-0">
                                                         <p class="text-lg font-black" :class="item.qty <= 5 ? 'text-red-500' : 'text-slate-800'">
@@ -162,37 +168,37 @@
                         </div>
                     </template>
 
-                    <!-- [B] หน้าแบบฟอร์มเบิกจ่าย และ นำเข้าสินค้า -->
+                    <!-- [B] หน้าจอแบบฟอร์มบันทึกนำสินค้าเข้าคลัง / เบิกจ่ายสินค้าออก (Receive / Withdraw Form) -->
                     <template x-if="page === 'in' || page === 'out'">
                         <div class="max-w-4xl mx-auto bg-white rounded-xl shadow-sm border border-slate-200 p-4 md:p-6 space-y-6">
                             <div class="border-b border-slate-200 pb-4">
-                                <h2 class="text-xl font-black text-slate-800" x-text="page === 'in' ? '📥 แบบฟอร์มนำเข้าสินค้า (Receive Stock)' : '📤 แบบฟอร์มเบิกจ่ายสินค้า (Withdraw Stock)'"></h2>
-                                <p class="text-xs text-slate-500">ป้อนข้อมูลและค้นหารหัสอุปกรณ์เพื่อเตรียมยื่นเรื่องเพื่อบันทึกประวัติ</p>
+                                <h2 class="text-xl font-black text-slate-800" x-text="page === 'in' ? '📥 แบบฟอร์มนำเข้าพัสดุอุปกรณ์ (Receive)' : '📤 แบบฟอร์มเบิกพัสดุอุปกรณ์ออก (Withdraw)'"></h2>
+                                <p class="text-xs text-slate-500">กรอกรหัสพัสดุ หรือค้นหาผ่านฟิลด์รายการข้างล่างเพื่อคำนวณสลิปการเปลี่ยนแปลงยอดคลัง</p>
                             </div>
 
                             <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                                 <div>
-                                    <label class="block text-xs font-bold text-slate-600 mb-1">ชื่อผู้ดำเนินการเบิก/รับ *</label>
-                                    <input type="text" x-model="form.user" placeholder="ชื่อ-นามสกุลจริง" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-1 focus:ring-blue-500 outline-none">
+                                    <label class="block text-xs font-bold text-slate-600 mb-1">ชื่อผู้ทำรายการเบิก / รับสินค้า *</label>
+                                    <input type="text" x-model="form.user" placeholder="ระบุชื่อ-นามสกุลจริง" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-1 focus:ring-blue-500 outline-none">
                                 </div>
                                 <div>
-                                    <label class="block text-xs font-bold text-slate-600 mb-1">สถานที่ไซต์งาน (Site)</label>
-                                    <input type="text" x-model="form.site" placeholder="ระบุตำแหน่งไซต์งานติดตั้ง" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-1 focus:ring-blue-500 outline-none">
+                                    <label class="block text-xs font-bold text-slate-600 mb-1">สถานที่ติดตั้ง / หน้าไซต์งาน (Site)</label>
+                                    <input type="text" x-model="form.site" placeholder="ระบุชื่อไซต์งาน" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-1 focus:ring-blue-500 outline-none">
                                 </div>
                                 <div>
-                                    <label class="block text-xs font-bold text-slate-600 mb-1">ประเภทการจอง/รับจริง *</label>
+                                    <label class="block text-xs font-bold text-slate-600 mb-1">ประเภทการจัดเก็บเอกสาร *</label>
                                     <select x-model="form.txnType" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-1 focus:ring-blue-500 outline-none">
-                                        <option value="ACTUAL">ดำเนินการสต๊อกจริงทันที (Actual)</option>
-                                        <option value="RESERVE">สร้างเรื่องจองพัสดุชั่วคราว (Reserve)</option>
+                                        <option value="ACTUAL">เบิกจ่าย / รับสินค้าจริงทันที (Actual)</option>
+                                        <option value="RESERVE">ดำเนินการจองไว้ล่วงหน้า (Reserve)</option>
                                     </select>
                                 </div>
                             </div>
 
                             <div class="space-y-4">
                                 <div class="flex justify-between items-center">
-                                    <h3 class="font-bold text-slate-700 text-sm">📋 รายการวัสดุอุปกรณ์</h3>
+                                    <h3 class="font-bold text-slate-700 text-sm">📋 รายละเอียดสินค้าในแบบฟอร์ม</h3>
                                     <button @click="addRow()" class="text-xs font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1">
-                                        ➕ เพิ่มบรรทัดรายการสินค้า
+                                        ➕ เพิ่มแถวอุปกรณ์
                                     </button>
                                 </div>
 
@@ -201,30 +207,31 @@
                                         <div class="p-4 bg-slate-50 rounded-xl border border-slate-200 relative flex flex-col gap-3">
                                             <button @click="removeRow(idx)" class="absolute top-2 right-2 text-red-500 hover:text-red-700 text-sm">✕</button>
                                             
+                                            <!-- 3. นำฟังก์ชันค้นหาสินค้าจากช่องใดช่องหนึ่งกลับมาทำงานร่วมกันได้อย่างสมบูรณ์แบบเดิม -->
                                             <div class="grid grid-cols-1 sm:grid-cols-12 gap-3 pt-3 sm:pt-0 items-end">
                                                 <div class="sm:col-span-3">
-                                                    <label class="block text-[10px] font-bold text-slate-500 mb-1">ค้นหาจากสินค้าคลังหลัก</label>
+                                                    <label class="block text-[10px] font-bold text-slate-500 mb-1">เลือกผ่านรหัสคลังหลัก</label>
                                                     <select x-model="row.itemId" @change="autoFillFromMaster(row)" class="w-full border border-slate-300 rounded-lg p-2 text-xs bg-white outline-none">
-                                                        <option value="">-- ดึงข้อมูลรหัสหลัก --</option>
+                                                        <option value="">-- ค้นหารหัสในสต๊อก --</option>
                                                         <template x-for="item in inventory" :key="item.id">
                                                             <option :value="item.id" x-text="item.itemCode + ' - ' + item.name"></option>
                                                         </template>
                                                     </select>
                                                 </div>
                                                 <div class="sm:col-span-2">
-                                                    <label class="block text-[10px] font-bold text-slate-500 mb-1">รหัสสินค้า (Item Code)</label>
-                                                    <input type="text" x-model="row.itemCode" @input="autoFillFromCodeText(row)" placeholder="รหัสวัสดุ" class="w-full border border-slate-300 rounded-lg p-2 text-xs uppercase bg-white">
+                                                    <label class="block text-[10px] font-bold text-slate-500 mb-1">หรือพิมพ์รหัสสินค้า (Item Code)</label>
+                                                    <input type="text" x-model="row.itemCode" @input="autoFillFromCodeText(row)" placeholder="เช่น PV-001" class="w-full border border-slate-300 rounded-lg p-2 text-xs uppercase bg-white">
                                                 </div>
                                                 <div class="sm:col-span-3">
-                                                    <label class="block text-[10px] font-bold text-slate-500 mb-1">ชื่อเรียกพัสดุอุปกรณ์</label>
-                                                    <input type="text" x-model="row.name" @input="autoFillFromNameText(row)" placeholder="รายละเอียด" class="w-full border border-slate-300 rounded-lg p-2 text-xs bg-white">
+                                                    <label class="block text-[10px] font-bold text-slate-500 mb-1">รายละเอียดพัสดุ (Description)</label>
+                                                    <input type="text" x-model="row.name" @input="autoFillFromNameText(row)" placeholder="เช่น PV Module 550W" class="w-full border border-slate-300 rounded-lg p-2 text-xs bg-white">
                                                 </div>
                                                 <div class="sm:col-span-2">
-                                                    <label class="block text-[10px] font-bold text-slate-500 mb-1">รุ่นสินค้า</label>
-                                                    <input type="text" x-model="row.model" @input="autoFillFromModelText(row)" placeholder="ระบุรุ่น" class="w-full border border-slate-300 rounded-lg p-2 text-xs bg-white">
+                                                    <label class="block text-[10px] font-bold text-slate-500 mb-1">รุ่นสินค้า (Model)</label>
+                                                    <input type="text" x-model="row.model" @input="autoFillFromModelText(row)" placeholder="เช่น รุ่นอุปกรณ์" class="w-full border border-slate-300 rounded-lg p-2 text-xs bg-white">
                                                 </div>
                                                 <div class="sm:col-span-1">
-                                                    <label class="block text-[10px] font-bold text-slate-500 mb-1">จำนวน</label>
+                                                    <label class="block text-[10px] font-bold text-slate-500 mb-1">จำนวน *</label>
                                                     <input type="number" x-model.number="row.qty" class="w-full border border-slate-300 rounded-lg p-2 text-xs bg-white">
                                                 </div>
                                                 <div class="sm:col-span-1">
@@ -243,16 +250,16 @@
 
                             <div class="pt-4 flex justify-end gap-3 border-t border-slate-100">
                                 <button @click="resetForm()" class="px-5 py-2.5 border border-slate-300 rounded-lg text-sm text-slate-700 hover:bg-slate-50">
-                                    เคลียร์ข้อมูล
+                                    ล้างฟอร์ม
                                 </button>
                                 <button @click="submitTransaction()" class="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-bold shadow-sm">
-                                    ยืนยันส่งข้อมูลไปที่ Logs
+                                    บันทึกส่งรายการตรวจเช็ค
                                 </button>
                             </div>
                         </div>
                     </template>
 
-                    <!-- [C] บันทึกประวัติและธุรกรรม (Logs Table) -->
+                    <!-- [C] หน้าสำหรับตรวจเช็คประวัติทำรายการธุรกรรม (Logs Table) -->
                     <template x-if="page === 'logs'">
                         <div class="space-y-6">
                             <div>
@@ -307,7 +314,7 @@
                                                         <div class="flex flex-col gap-1.5">
                                                             <div class="flex flex-wrap gap-1 justify-end">
                                                                 <button @click="printLogData(log)" class="bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-bold px-2.5 py-1 rounded">
-                                                                    🖨️ สั่งพิมพ์
+                                                                    🖨 Ink / พิมพ์
                                                                 </button>
                                                                 <template x-if="!log.pdfData">
                                                                     <label class="bg-slate-600 hover:bg-slate-700 text-white text-[10px] font-bold px-2.5 py-1 rounded cursor-pointer inline-block">
@@ -357,7 +364,7 @@
                         </div>
                     </template>
 
-                    <!-- [D] หน้าตั้งค่าและจัดการสต๊อก (Settings) -->
+                    <!-- [D] หน้าสำหรับปรับปรุงการตั้งค่า Master Data (Settings) -->
                     <template x-if="page === 'settings'">
                         <div class="space-y-8">
                             <div class="border-b border-slate-200 pb-4">
@@ -441,7 +448,7 @@
                                 </div>
                                 <div class="flex justify-end pt-2">
                                     <button @click="addMaterial()" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg text-xs font-bold shadow-sm transition-colors">
-                                        ยืนยันลงทะเบียนข้อมูลวัสดุ
+                                        ลงทะเบียนข้อมูลวัสดุ
                                     </button>
                                 </div>
                             </div>
@@ -496,147 +503,132 @@
         </div>
     </template>
 
-    <!-- [3] 1. หน้าต่างคู่มือช่วยเหลือผู้ใช้งานทั่วไป (User Manual Modal) เมื่อกดปุ่มกลมด้านล่างซ้าย -->
+    <!-- [3] 1. หน้าต่างคู่มือช่วยเหลือผู้ใช้ทั่วไป (User Manual) จะถูกเปิดขึ้นมาหลังจากล็อกอินและกดปุ่มด้านล่างซ้าย -->
     <div x-show="userModalOpen" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4" x-transition>
         <div @click.away="userModalOpen = false" class="bg-white rounded-xl shadow-2xl border border-slate-200 max-w-lg w-full overflow-hidden">
             <div class="bg-slate-950 text-white p-4 flex justify-between items-center">
                 <h3 class="font-bold text-sm flex items-center gap-2">
-                    📖 คู่มือการใช้งานสำหรับ User ในการกรอกข้อมูล
+                    📖 คู่มือออฟไลน์ประกอบขั้นตอนการป้อนฟอร์มสต๊อกสินค้า
                 </h3>
                 <button @click="userModalOpen = false" class="text-slate-400 hover:text-white">✕</button>
             </div>
             <div class="p-6 space-y-4 max-h-[80vh] overflow-y-auto">
-                
                 <div class="bg-blue-50 border-l-4 border-blue-600 p-4 rounded-r-lg">
-                    <p class="text-xs text-blue-800 font-bold">💡 ข้อแนะนำเบื้องต้น</p>
-                    <p class="text-[11px] text-blue-700 mt-1">ผู้ใช้สิทธิ์ทั่วไป (User PIN: 111111) สามารถส่งคำร้องขอนำเข้า (Receive) หรือเบิกจ่าย (Withdraw) อุปกรณ์ได้ โดยรายการจะยังไม่หักลบจำนวนจริงในสต๊อกจนกว่า แอดมิน (Admin) จะกดตรวจสอบอนุมัติ [1]</p>
+                    <p class="text-xs text-blue-800 font-bold">💡 คำชี้แจงสำหรับเจ้าหน้าที่ผู้ใช้งาน</p>
+                    <p class="text-[11px] text-blue-700 mt-1">ผู้ใช้สิทธิ์ทั่วไป (User PIN: 111111) สามารถกรอกเรื่องทำรายการได้ด้วยตัวเอง แต่ยอดสต๊อกจริงจะไม่มีผลเปลี่ยนแปลงจนกว่าจะได้รับอนุมัติจาก Admin [1]</p>
                 </div>
 
-                <!-- ขั้นตอนคู่มืออย่างละเอียดสำหรับการใช้คลังสินค้า CNES -->
-                <div class="space-y-4">
-                    <h4 class="text-xs font-black text-slate-800 uppercase tracking-wider border-b border-slate-200 pb-1">📋 ขั้นตอนกรอกแบบฟอร์มเบิกจ่ายและนำเข้า</h4>
+                <div class="space-y-4 text-xs text-slate-600">
+                    <h4 class="font-black text-slate-800 uppercase tracking-wider border-b border-slate-200 pb-1">📋 ลำดับขั้นตอนการป้อนข้อมูลเพื่อเบิก / รับของ</h4>
                     
                     <div class="flex gap-3">
-                        <div class="w-6 h-6 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-xs flex-shrink-0">1</div>
-                        <div class="text-xs text-slate-600">
-                            <p class="font-bold text-slate-800">เลือกประเภทความประสงค์ในการทำธุรกรรม</p>
-                            <p class="mt-0.5">เลือกเมนู <strong>นำเข้าสินค้า (Receive)</strong> เพื่อนำพัสดุเข้าคลัง หรือเลือกเมนู <strong>เบิกจ่ายสินค้า (Withdraw)</strong> เพื่อตัดยอดสินค้าออกจากคลัง [1]</p>
-                        </div>
+                        <div class="w-6 h-6 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold flex-shrink-0">1</div>
+                        <p class="mt-0.5">คลิกเมนู <strong>นำเข้าสินค้า (Receive)</strong> หรือ <strong>เบิกจ่ายสินค้า (Withdraw)</strong> จากแถบ Sidebar ฝั่งซ้าย [1]</p>
                     </div>
 
                     <div class="flex gap-3">
-                        <div class="w-6 h-6 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-xs flex-shrink-0">2</div>
-                        <div class="text-xs text-slate-600">
-                            <p class="font-bold text-slate-800">ระบุรายละเอียดผู้เบิกและไซต์งานปลายทาง</p>
-                            <p class="mt-0.5">กรอกชื่อจริงในช่อง "ชื่อผู้ดำเนินการเบิก/รับ" และระบุชื่อไซต์งานที่ต้องการนำวัสดุไปใช้งานในช่อง "สถานที่ไซต์งาน" [1]</p>
-                        </div>
+                        <div class="w-6 h-6 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold flex-shrink-0">2</div>
+                        <p class="mt-0.5">ระบุชื่อจริงในช่อง "ชื่อผู้ทำรายการเบิก / รับสินค้า" และระบุชื่อหน้าไซต์ปลายทางในช่อง "สถานที่ติดตั้ง / หน้าไซต์งาน" [1]</p>
                     </div>
 
                     <div class="flex gap-3">
-                        <div class="w-6 h-6 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-xs flex-shrink-0">3</div>
-                        <div class="text-xs text-slate-600">
-                            <p class="font-bold text-slate-800">ดึงข้อมูลพัสดุเพื่อกรอกแบบกึ่งอัตโนมัติ</p>
-                            <p class="mt-0.5">คลิกที่ช่อง <strong>"ค้นหาจากสินค้าคลังหลัก"</strong> เพื่อดึงรหัสที่เคยลงทะเบียน ระบบจะกรอกรหัส ชื่อ และรุ่นให้อัตโนมัติ ป้องกันข้อมูลตกหล่น [1]</p>
-                        </div>
+                        <div class="w-6 h-6 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold flex-shrink-0">3</div>
+                        <p class="mt-0.5">พิมพ์ข้อมูลในช่อง **"รหัสสินค้า (Item Code)"**, **"ชื่อวัสดุ"** หรือ **"รุ่นพัสดุ"** ช่องใดก็ได้ เพื่อให้ระบบสแกนและดึงข้อมูลเติมแบบฟอร์มกึ่งอัตโนมัติ [1]</p>
                     </div>
 
                     <div class="flex gap-3">
-                        <div class="w-6 h-6 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-xs flex-shrink-0">4</div>
-                        <div class="text-xs text-slate-600">
-                            <p class="font-bold text-slate-800">การกรอกข้อมูลพัสดุด้วยตนเอง (Manual)</p>
-                            <p class="mt-0.5">หากไม่พบพัสดุที่ต้องการในรายการหลัก สามารถพิมพ์รหัสสินค้า ชื่องาน และรุ่นลงในช่องป้อนรหัสโดยตรงเพื่อส่งคำร้องอนุมัติพัสดุจรชั่วคราว [1]</p>
-                        </div>
-                    </div>
-
-                    <div class="flex gap-3">
-                        <div class="w-6 h-6 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-xs flex-shrink-0">5</div>
-                        <div class="text-xs text-slate-600">
-                            <p class="font-bold text-slate-800">ระบุจำนวนที่ต้องการและส่งขออนุมัติ</p>
-                            <p class="mt-0.5">ระบุยอดที่ต้องการเบิก ตรวจสอบ "หน่วยนับ" ให้สัมพันธ์กับหน้า Dashboard แล้วกดปุ่ม <strong>"ยืนยันส่งข้อมูลไปที่ Logs"</strong> [1]</p>
-                        </div>
+                        <div class="w-6 h-6 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold flex-shrink-0">4</div>
+                        <p class="mt-0.5">ระบุยอดปริมาณพัสดุที่ย้ายคลังจริง ตรวจทานข้อมูลให้ครบถ้วนแล้วคลิก <strong>"บันทึกส่งรายการตรวจเช็ค"</strong> [1]</p>
                     </div>
                 </div>
 
                 <div class="pt-2">
                     <button @click="userModalOpen = false" class="w-full bg-slate-900 hover:bg-slate-800 text-white p-2.5 rounded-lg text-xs font-bold transition-colors">
-                        รับทราบและเข้าใจขั้นตอน
+                        รับทราบข้อมูลคู่มือ
                     </button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- [4] แผ่นสลิปพิมพ์เอกสาร (Print Template - เผื่อกรณีพิมพ์รายงานตรวจสอบ) -->
+    <!-- [4] แผ่นงานสลิปพิมพ์เอกสาร (Print Template) - บังคับลายเซ็นอยู่ด้านล่างสุดของหน้าเสมอ -->
     <div x-show="printData" class="fixed inset-0 bg-white z-[120] p-8 flex flex-col justify-between" id="printable-area">
         <template x-if="printData">
-            <div class="space-y-6">
-                <div class="flex justify-between items-start border-b-2 border-slate-900 pb-4">
-                    <div>
-                        <h1 class="text-xl font-black text-slate-900">CNES CORPORATION CO., LTD.</h1>
-                        <p class="text-[10px] text-slate-500">บริษัท ซีเอ็นอีเอส คอร์ปอเรชั่น จำกัด</p>
+            <!-- คลุมด้วยกล่องควบคุมให้ทำงานเป็น Flex เพื่อบีบให้ลายเซ็นไหลลงไปอยู่ท้ายสุดของเอกสารอย่างมั่นคงเสมอตามรูปแบบเดิม -->
+            <div class="flex flex-col h-full justify-between">
+                
+                <!-- ส่วนบน: ตารางข้อมูลธุรกรรมและรายการสินค้า -->
+                <div class="space-y-6">
+                    <div class="flex justify-between items-start border-b-2 border-slate-900 pb-4">
+                        <div>
+                            <h1 class="text-xl font-black text-slate-900">CNES CORPORATION CO., LTD.</h1>
+                            <p class="text-[10px] text-slate-500">บริษัท ซีเอ็นอีเอส คอร์ปอเรชั่น จำกัด</p>
+                        </div>
+                        <div class="text-right">
+                            <h2 class="text-md font-bold text-slate-800" x-text="printData.type + ' STOCK SLIP'"></h2>
+                            <p class="text-[10px] text-slate-400" x-text="'Ref ID: ' + printData.id"></p>
+                        </div>
                     </div>
-                    <div class="text-right">
-                        <h2 class="text-md font-bold text-slate-800" x-text="printData.type + ' STOCK SLIP'"></h2>
-                        <p class="text-[10px] text-slate-400" x-text="'Ref ID: ' + printData.id"></p>
-                    </div>
-                </div>
 
-                <div class="grid grid-cols-2 gap-4 text-xs text-slate-700">
-                    <div>
-                        <p class="font-bold">ข้อมูลผู้ขอทำรายการ:</p>
-                        <p x-text="'ชื่อผู้ดำเนินการ: ' + printData.user"></p>
-                        <p x-text="'สถานที่ไซต์งาน (Site): ' + (printData.site || 'N/A')"></p>
+                    <div class="grid grid-cols-2 gap-4 text-xs text-slate-700">
+                        <div>
+                            <p class="font-bold">ข้อมูลผู้ทำรายการ:</p>
+                            <p x-text="'ชื่อผู้เบิก/รับของ: ' + printData.user"></p>
+                            <p x-text="'สถานที่ไซต์งาน (Site): ' + (printData.site || 'N/A')"></p>
+                        </div>
+                        <div class="text-right">
+                            <p class="font-bold">รายละเอียดเวลา:</p>
+                            <p x-text="'วันเวลาดำเนินการ: ' + printData.timestamp"></p>
+                            <p x-text="'ประเภทธุรกรรม: ' + printData.txnType"></p>
+                        </div>
                     </div>
-                    <div class="text-right">
-                        <p class="font-bold">รายละเอียดเวลา:</p>
-                        <p x-text="'วันเวลาดำเนินการ: ' + printData.timestamp"></p>
-                        <p x-text="'ประเภทธุรกรรม: ' + printData.txnType"></p>
-                    </div>
-                </div>
 
-                <table class="w-full text-xs text-left border-collapse border border-slate-300">
-                    <thead>
-                        <tr class="bg-slate-100 text-slate-800 border-b border-slate-300 font-bold">
-                            <th class="border border-slate-300 p-2">รหัสสินค้า</th>
-                            <th class="border border-slate-300 p-2">รายการวัสดุ</th>
-                            <th class="border border-slate-300 p-2">รุ่นพัสดุ</th>
-                            <th class="border border-slate-300 p-2 text-right">จำนวน</th>
-                            <th class="border border-slate-300 p-2">หน่วย</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <template x-for="row in printData.items">
-                            <tr class="border-b border-slate-200">
-                                <td class="border border-slate-300 p-2 font-mono font-bold" x-text="row.itemCode"></td>
-                                <td class="border border-slate-300 p-2" x-text="row.name"></td>
-                                <td class="border border-slate-300 p-2" x-text="row.model"></td>
-                                <td class="border border-slate-300 p-2 text-right font-bold" x-text="row.qty"></td>
-                                <td class="border border-slate-300 p-2" x-text="row.unit"></td>
+                    <table class="w-full text-xs text-left border-collapse border border-slate-300">
+                        <thead>
+                            <tr class="bg-slate-100 text-slate-800 border-b border-slate-300 font-bold">
+                                <th class="border border-slate-300 p-2">รหัส</th>
+                                <th class="border border-slate-300 p-2">รายการวัสดุ</th>
+                                <th class="border border-slate-300 p-2">รุ่นอุปกรณ์</th>
+                                <th class="border border-slate-300 p-2 text-right">จำนวน</th>
+                                <th class="border border-slate-300 p-2">หน่วยนับ</th>
                             </tr>
-                        </template>
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                            <template x-for="row in printData.items">
+                                <tr class="border-b border-slate-200">
+                                    <td class="border border-slate-300 p-2 font-mono font-bold" x-text="row.itemCode"></td>
+                                    <td class="border border-slate-300 p-2" x-text="row.name"></td>
+                                    <td class="border border-slate-300 p-2" x-text="row.model"></td>
+                                    <td class="border border-slate-300 p-2 text-right font-bold" x-text="row.qty"></td>
+                                    <td class="border border-slate-300 p-2" x-text="row.unit"></td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+                </div>
 
-                <div class="grid grid-cols-2 gap-8 pt-12 text-xs text-center">
+                <!-- 2. ส่วนล่าง: ลายเซ็นพยานบังคับให้อยู่ส่วนล่างสุดของเอกสารอย่างมั่นคงเสมอตามรูปแบบเดิม -->
+                <div class="grid grid-cols-2 gap-8 pt-12 text-xs text-center border-t border-slate-200 mt-auto">
                     <div class="space-y-8">
-                        <p>ผู้เบิก / รับของ: ................................................................</p>
+                        <p>ผู้ทำรายการเบิก / รับสินค้า: ................................................................</p>
                         <p x-text="'( ' + printData.user + ' )'"></p>
                     </div>
                     <div class="space-y-8">
-                        <p>ผู้ควบคุมคลัง: ................................................................</p>
-                        <p>( แอดมินตรวจสอบ )</p>
+                        <p>ผู้ตรวจสอบการปรับสต๊อกสินค้า: ................................................................</p>
+                        <p>( เจ้าหน้าที่คุมคลังและอนุมัติระบบแอดมิน )</p>
                     </div>
                 </div>
+                
             </div>
         </template>
     </div>
 
-    <!-- สไตล์จำกัดขอบเขตการพิมพ์หน้าต่าง Printable ออกมาเฉพาะแผ่นสลิปหลัก -->
+    <!-- สไตล์บังคับควบคุมพฤติกรรมการส่งพิมพ์เอกสารเฉพาะแผ่นสลิปหลัก -->
     <style>
         @media print {
             body * { visibility: hidden !important; }
             #printable-area, #printable-area * { visibility: visible !important; }
-            #printable-area { position: absolute !important; left: 0 !important; top: 0 !important; width: 100% !important; }
+            #printable-area { position: absolute !important; left: 0 !important; top: 0 !important; width: 100% !important; height: 100% !important; }
         }
     </style>
 </body>
