@@ -5,6 +5,8 @@ function cnesApp() {
         userRole: '',
         loginPin: '',
         page: 'dashboard',
+        sidebarOpen: false, // เพิ่มสถานะสำหรับควบคุมเมนูแถบข้างในหน้าจอมือถือ
+        userModalOpen: false, // เพิ่มสถานะสำหรับควบคุมการเปิด/ปิดหน้าต่างคู่มือการกรอกข้อมูลของ User
         
         // --- ฐานข้อมูลหลัก ---
         categories: [],
