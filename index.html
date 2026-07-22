@@ -4,592 +4,640 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CNES Inventory System v1.7.7</title>
-    <!-- โหลดไลบรารีสไตล์ชีตหลักจากส่วนกลาง (Tailwind & Google Fonts) -->
+    <!-- เรียกใช้ Tailwind CSS และ Alpine.js เพื่อควบคุม UI และสแต็กของคลาสสิทธิ์ -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Sarabun:wght@300;400;600&display=swap" rel="stylesheet">
-    <!-- เรียกใช้งานไฟล์สไตล์พิมพ์เอกสารและฟอนต์ภายนอก -->
-    <link rel="stylesheet" href="style.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script src="script.js"></script>
 </head>
-<body x-data="cnesApp()" x-init="initData()" class="bg-slate-100">
+<body class="bg-slate-50 font-sans antialiased text-slate-800" x-data="cnesApp()" x-init="initData()">
 
-    <!-- [1. หน้า Login เข้าสู่ระบบ] -->
+    <!-- [1] หน้าจอการป้อนรหัส PIN เข้าสู่ระบบ -->
     <template x-if="!isLoggedIn">
-        <div class="fixed inset-0 bg-[#002366] flex items-center justify-center z-50 p-4">
-            <div class="bg-white p-8 rounded-2xl shadow-2xl max-w-xs w-full text-center border-t-8 border-orange-500 flex flex-col items-center">
-                <!-- เปลี่ยนเป็นใช้ไฟล์ภาพโลโก้ใหม่ -->
-                <img src="logo.jpg" alt="Christiani & Nielsen Energy Solutions Logo" class="h-16 w-auto mb-4 object-contain">
-                <h1 class="text-xs font-black text-[#002366] mb-1 uppercase leading-tight">Christiani & Nielsen Energy Solutions</h1>
-                <p class="text-[10px] text-slate-400 mb-6 font-bold uppercase tracking-widest">Inventory System v1.7.7</p>
-                <input type="password" x-model="loginPin" @keydown.enter="handleLogin" autofocus placeholder="PIN CODE"
-                       class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-center text-xl tracking-[0.4em] outline-none mb-4 focus:ring-2 focus:ring-[#FF8C00]">
-                <button @click="handleLogin" class="w-full bg-[#FF8C00] text-white p-3 rounded-xl font-bold hover:bg-orange-600 shadow-lg uppercase transition">Sign In (เข้าสู่ระบบ)</button>
+        <div class="min-h-screen flex items-center justify-center bg-slate-950 p-4">
+            <div class="max-w-md w-full bg-white rounded-2xl shadow-xl border border-slate-100 p-8 space-y-6">
+                <div class="text-center space-y-2">
+                    <h1 class="text-2xl font-black tracking-wider text-slate-800">CNES INVENTORY</h1>
+                    <p class="text-xs text-slate-500">กรุณากรอกรหัส PIN (111111 สำหรับสิทธิ์ User ทั่วไป)</p>
+                </div>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-2">PIN เข้าใช้งาน</label>
+                        <input type="password" x-model="loginPin" @keydown.enter="handleLogin()" placeholder="••••••" class="w-full text-center text-xl tracking-[0.75em] font-mono border border-slate-300 rounded-xl p-3 focus:ring-2 focus:ring-blue-500 outline-none">
+                    </div>
+                    <button @click="handleLogin()" class="w-full bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-xl font-bold transition-all shadow-md">
+                        เข้าสู่ระบบ (Login)
+                    </button>
+                </div>
             </div>
         </div>
     </template>
 
-    <!-- [2. โครงสร้าง Layout หลักหลัง Login] -->
-    <div x-show="isLoggedIn" class="flex h-screen overflow-hidden" x-cloak>
-        
-        <!-- [แถบนำทางข้าง - Sidebar (ไม่แสดงในหน้าพิมพ์)] -->
-        <aside class="w-64 bg-[#002366] text-white flex flex-col no-print shadow-2xl">
-            <div class="p-6 text-center border-b border-blue-900/50 flex flex-col items-center">
-                <!-- แสดงรูปโลโก้ใหม่ พร้อมเพิ่มคำอธิบายใต้โลโก้อย่างเป็นทางการ -->
-                <img src="logo.jpg" alt="Christiani & Nielsen Energy Solutions Logo" class="h-14 w-auto mb-3 bg-white p-1 rounded object-contain">
-                <p class="text-[9px] text-blue-300 font-black tracking-wider uppercase leading-snug">Christiani & Nielsen Energy Solutions</p>
-            </div>
+    <!-- [2] หน้าหลักแสดงผลระบบหลังเข้าสู่ระบบ -->
+    <template x-if="isLoggedIn">
+        <div class="min-h-screen flex flex-col md:flex-row">
             
-            <nav class="flex-1 p-4 space-y-1 mt-4 italic">
-                <button @click="page = 'dashboard'" :class="page === 'dashboard' ? 'bg-white text-[#002366]' : 'hover:bg-blue-800'" class="w-full p-3 rounded-xl transition-all text-left font-bold text-[10px] uppercase">
-                    Dashboard (แผงควบคุม)
+            <!-- Mobile Navigation Bar (แสดงเฉพาะหน้าจอมือถือและสมาร์ทโฟน) -->
+            <header class="bg-slate-950 text-white flex items-center justify-between p-4 md:hidden fixed top-0 left-0 right-0 z-40 shadow-md">
+                <span class="text-base font-extrabold tracking-widest">CNES STOCK</span>
+                <button @click="sidebarOpen = !sidebarOpen" class="p-2 text-white hover:bg-slate-800 rounded">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                    </svg>
                 </button>
-                <button @click="page = 'out'" :class="page === 'out' ? 'bg-white text-[#002366]' : 'hover:bg-blue-800'" class="w-full p-3 rounded-xl transition-all text-left font-bold text-[10px] uppercase">
-                    Withdrawal (ใบเบิกวัสดุ)
-                </button>
-                <button @click="page = 'in'" :class="page === 'in' ? 'bg-white text-[#002366]' : 'hover:bg-blue-800'" class="w-full p-3 rounded-xl transition-all text-left font-bold text-[10px] uppercase">
-                    Storage (ใบนำของเข้า)
-                </button>
-                <button @click="page = 'logs'" :class="page === 'logs' ? 'bg-white text-[#002366]' : 'hover:bg-blue-800'" class="w-full p-3 rounded-xl transition-all text-left font-bold text-[10px] uppercase relative">
-                    Logs (ประวัติรายการ)
-                    <span x-show="getPendingCount() > 0 && userRole === 'admin'" class="absolute right-2 top-3 bg-red-500 text-white text-[8px] px-1.5 rounded-full" x-text="getPendingCount()"></span>
-                </button>
-            </nav>
+            </header>
 
-            <div class="p-4 border-t border-blue-900/50 space-y-2">
-                <template x-if="userRole === 'admin'">
-                    <button @click="page = 'settings'" :class="page === 'settings' ? 'bg-orange-500 text-white' : 'bg-blue-900/30 text-blue-200'" class="w-full p-3 rounded-xl text-[10px] font-black uppercase hover:bg-orange-400 transition italic">⚙️ Settings (ตั้งค่าระบบ)</button>
-                </template>
-                <div class="flex justify-between items-center text-[9px] font-bold text-blue-400 uppercase">
-                    <span x-text="'Role: ' + userRole"></span>
-                    <button @click="logout" class="text-red-400 hover:text-white underline">Sign Out</button>
-                </div>
-            </div>
-        </aside>
-
-        <!-- [พื้นที่แสดงผลเนื้อหาหลัก - Content Area] -->
-        <main class="flex-1 overflow-y-auto p-8">
-            
-            <!-- [หน้า Dashboard - ตารางแสดงผลรายงานคงเหลือคงคลัง] -->
-            <div x-show="page === 'dashboard'" class="max-w-6xl mx-auto">
-                <div class="flex justify-between items-end mb-8">
-                    <div>
-                        <h2 class="text-xl font-black text-slate-800">Inventory Status (วัสดุคงคลัง)</h2>
-                        <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest italic">Live stock balances & pending reservations</p>
+            <!-- Left Navigation Sidebar (พับเก็บและขยายออกแบบ Responsive ทั่วถึงทุกขนาดอุปกรณ์) -->
+            <aside class="w-64 bg-slate-950 text-white flex flex-col justify-between h-screen fixed left-0 top-0 z-50 transition-transform duration-300 md:translate-x-0"
+                   :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'">
+                
+                <div class="p-4 flex flex-col space-y-6">
+                    <div class="flex items-center justify-between">
+                        <h1 class="text-xl font-black tracking-widest text-blue-500">CNES STOCK</h1>
+                        <button @click="sidebarOpen = false" class="md:hidden text-slate-400 hover:text-white">✕</button>
                     </div>
-                    <button @click="downloadCSV" class="bg-emerald-600 text-white px-4 py-2 rounded font-bold text-[10px] uppercase shadow-md">Export Excel (CSV)</button>
-                </div>
-
-                <template x-for="cat in categories" :key="cat">
-                    <div class="mb-6" x-show="getInventoryByCategory(cat).length > 0">
-                        <h3 class="text-[11px] font-black text-slate-500 uppercase mb-2 ml-1" x-text="cat"></h3>
-                        <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-                            <table class="w-full text-left text-[11px]">
-                                <thead class="bg-slate-50 border-b text-slate-400 font-bold uppercase">
-                                    <tr>
-                                        <th class="px-6 py-2">Code (รหัส)</th>
-                                        <th class="px-6 py-2">Material (ชื่อวัสดุ)</th>
-                                        <th class="px-6 py-2">Model (รุ่น)</th>
-                                        <th class="px-6 py-2">Location (ตำแหน่ง)</th>
-                                        <th class="px-6 py-2 text-right">Balance (คงเหลือ)</th>
-                                        <th class="px-6 py-2 text-right text-orange-500">Reserve (จอง)</th>
-                                        <th class="px-6 py-2">Unit (หน่วย)</th>
-                                        <th class="px-6 py-2">Last Updated (อัปเดตเมื่อ)</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <template x-for="item in getInventoryByCategory(cat)" :key="item.id">
-                                        <tr class="border-b last:border-0 hover:bg-slate-50 transition">
-                                            <td class="px-6 py-3 font-bold text-slate-500" x-text="item.itemCode"></td>
-                                            <td class="px-6 py-3 font-bold text-slate-700" x-text="item.name"></td>
-                                            <td class="px-6 py-3 text-slate-400 italic" x-text="item.model"></td>
-                                            <td class="px-6 py-3 text-slate-600 font-bold" x-text="item.location || '-'"></td>
-                                            <td class="px-6 py-3 text-right font-black text-blue-700" x-text="item.qty"></td>
-                                            <td class="px-6 py-3 text-right font-bold text-orange-500" x-text="item.reserve_out || 0"></td>
-                                            <td class="px-6 py-3 text-slate-400 font-bold uppercase" x-text="item.unit"></td>
-                                            <td class="px-6 py-3 text-slate-500 text-[10px]" x-text="item.lastUpdated || '-'"></td>
-                                        </tr>
-                                    </template>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </template>
-            </div>
-
-            <!-- [หน้า Material Form - ใบเบิก และ ใบนำวัสดุเข้าคลัง] -->
-            <div x-show="page === 'out' || page === 'in'">
-                <div id="printArea" class="max-w-5xl mx-auto bg-white p-8 md:p-12 shadow-xl border border-slate-200 relative">
-                    
-                    <div class="no-print flex justify-end gap-4 pb-4 mb-4 border-b border-slate-100">
-                        <label class="flex items-center gap-2 cursor-pointer bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-100 transition">
-                            <input type="radio" x-model="form.txnType" value="ACTUAL" class="text-orange-500 focus:ring-orange-500">
-                            <span class="text-[10px] font-black uppercase text-slate-700">Actual (เบิก/รับจริง)</span>
-                        </label>
-                        <label class="flex items-center gap-2 cursor-pointer bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-100 transition">
-                            <input type="radio" x-model="form.txnType" value="RESERVE" class="text-orange-500 focus:ring-orange-500">
-                            <span class="text-[10px] font-black uppercase text-slate-700">Reserve (จองล่วงหน้า)</span>
-                        </label>
-                    </div>
-
-                    <div class="print-header flex justify-between items-start pb-6 mb-6 mt-8 md:mt-0 border-b-2 border-black">
-                        <div class="flex items-center gap-4">
-                            <!-- เปลี่ยนโลโก้บนแบบฟอร์มเอกสาร -->
-                            <img src="logo.jpg" alt="Christiani & Nielsen Energy Solutions Logo" class="h-12 w-auto object-contain bg-white rounded p-0.5">
-                            <div>
-                                <h1 class="text-base font-black text-[#002366] leading-tight">CHRISTIANI & NIELSEN ENERGY SOLUTIONS</h1>
-                                <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-0.5">
-                                    <span x-text="page === 'out' ? 'Material Withdrawal Form (ใบเบิกวัสดุอุปกรณ์)' : 'Material Storage Form (ใบนำวัสดุเข้าคลัง)'"></span>
-                                    <span x-show="form.txnType === 'RESERVE'" class="text-orange-600 font-black"> [RESERVATION]</span>
-                                </p>
-                            </div>
-                        </div>
-                        <div class="text-right text-[9px] font-bold space-y-1 text-slate-700">
-                            <p>Ref No: <span x-text="'CNES-'+Date.now().toString().slice(-6)"></span></p>
-                            <p>Date (วันที่): <span x-text="new Date().toLocaleDateString('th-TH')"></span></p>
-                        </div>
-                    </div>
-
-                    <div class="grid grid-cols-2 gap-8 mb-8 bg-slate-50 p-4 rounded-lg border border-slate-100 text-[11px]">
-                        <div>
-                            <label class="block text-[9px] font-black uppercase text-slate-400 mb-1">Operator (ผู้ดำเนินการ/ผู้เบิก)</label>
-                            <input type="text" x-model="form.user" class="w-full bg-transparent border-b border-slate-300 font-bold no-print outline-none focus:border-orange-500">
-                            <p class="hidden print:block font-bold border-b border-black" x-text="form.user || '-'"></p>
-                        </div>
-                        <div>
-                            <label class="block text-[9px] font-black uppercase text-slate-400 mb-1">Project Site (หน่วยงาน/โครงการ)</label>
-                            <input type="text" x-model="form.site" class="w-full bg-transparent border-b border-slate-300 font-bold no-print outline-none focus:border-orange-500">
-                            <p class="hidden print:block font-bold border-b border-black" x-text="form.site || '-'"></p>
-                        </div>
-                    </div>
-
-                    <table class="print-table w-full mb-8 text-[11px]">
-                        <thead class="bg-slate-100 font-bold uppercase text-[9px]">
-                            <tr>
-                                <th class="text-left w-[22%]">Code (รหัส)</th>
-                                <th class="text-left w-[35%]">Description (รายการวัสดุ)</th>
-                                <th class="text-left w-[23%]">Model (รุ่นสินค้า)</th>
-                                <th class="text-center w-16">Qty (จำนวน)</th>
-                                <th class="text-center w-20">Unit (หน่วย)</th>
-                                <th class="text-center w-10 no-print">#</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <template x-for="(row, index) in form.items" :key="index">
-                                <tr>
-                                    <td class="p-2 border relative" x-data="{ open: false, search: '' }">
-                                        <div class="no-print">
-                                            <input type="text" 
-                                                   x-model="row.itemCode" 
-                                                   @focus="open = true; search = row.itemCode" 
-                                                   @click.away="open = false"
-                                                   @input="open = true; search = row.itemCode; autoFillFromCodeText(row)" 
-                                                   placeholder="ค้นหา/กรอกรหัส..." 
-                                                   class="w-full bg-orange-50 p-1 rounded font-bold outline-none text-slate-700 focus:ring-1 focus:ring-orange-500 text-[11px] uppercase">
-                                            
-                                            <div x-show="open" class="absolute left-0 right-0 mt-1 bg-white border border-slate-200 rounded-lg shadow-lg max-h-48 overflow-y-auto z-50 text-left">
-                                                <template x-for="m in inventory.filter(i => !search || i.itemCode.toLowerCase().includes(search.toLowerCase()) || i.name.toLowerCase().includes(search.toLowerCase()) || i.model.toLowerCase().includes(search.toLowerCase()))" :key="m.id">
-                                                    <div @mousedown="row.itemId = m.id; autoFillFromMaster(row); open = false" 
-                                                         class="p-2 hover:bg-orange-50 cursor-pointer text-[10px] border-b last:border-0">
-                                                        <span class="font-black text-orange-500" x-text="m.itemCode"></span> - 
-                                                        <span class="font-bold text-slate-700" x-text="m.name"></span>
-                                                        <span class="text-slate-400 italic block text-[9px]" x-text="'Model: ' + m.model"></span>
-                                                    </div>
-                                                </template>
-                                            </div>
-                                        </div>
-                                        <p class="hidden print:block font-bold text-slate-700" x-text="row.itemCode || '-'"></p>
-                                    </td>
-
-                                    <td class="p-2 border relative" x-data="{ open: false, search: '' }">
-                                        <div class="no-print">
-                                            <input type="text" 
-                                                   x-model="row.name" 
-                                                   @focus="open = true; search = row.name" 
-                                                   @click.away="open = false"
-                                                   @input="open = true; search = row.name; autoFillFromNameText(row)" 
-                                                   placeholder="ค้นหา/กรอกรายการ..." 
-                                                   class="w-full bg-orange-50 p-1 rounded font-bold outline-none text-slate-700 focus:ring-1 focus:ring-orange-500 text-[11px] uppercase">
-                                            
-                                            <div x-show="open" class="absolute left-0 right-0 mt-1 bg-white border border-slate-200 rounded-lg shadow-lg max-h-48 overflow-y-auto z-50 text-left">
-                                                <template x-for="m in inventory.filter(i => !search || i.name.toLowerCase().includes(search.toLowerCase()) || i.itemCode.toLowerCase().includes(search.toLowerCase()) || i.model.toLowerCase().includes(search.toLowerCase()))" :key="m.id">
-                                                    <div @mousedown="row.itemId = m.id; autoFillFromMaster(row); open = false" 
-                                                         class="p-2 hover:bg-orange-50 cursor-pointer text-[10px] border-b last:border-0">
-                                                        <span class="font-bold text-slate-700" x-text="m.name"></span>
-                                                        <span class="text-orange-500 font-black block text-[9px]" x-text="m.itemCode + ' | Model: ' + m.model"></span>
-                                                    </div>
-                                                </template>
-                                            </div>
-                                        </div>
-                                        <p class="hidden print:block font-bold text-slate-700" x-text="row.name || '-'"></p>
-                                    </td>
-                                    
-                                    <td class="p-2 border relative" x-data="{ open: false, search: '' }">
-                                        <div class="no-print">
-                                            <input type="text" 
-                                                   x-model="row.model" 
-                                                   @focus="open = true; search = row.model" 
-                                                   @click.away="open = false"
-                                                   @input="open = true; search = row.model; autoFillFromModelText(row)" 
-                                                   placeholder="ค้นหา/กรอกรุ่น..." 
-                                                   class="w-full bg-orange-50 p-1 rounded font-bold outline-none text-slate-700 focus:ring-1 focus:ring-orange-500 text-[11px] uppercase">
-                                            
-                                            <div x-show="open" class="absolute left-0 right-0 mt-1 bg-white border border-slate-200 rounded-lg shadow-lg max-h-48 overflow-y-auto z-50 text-left">
-                                                <template x-for="m in inventory.filter(i => !search || i.model.toLowerCase().includes(search.toLowerCase()) || i.itemCode.toLowerCase().includes(search.toLowerCase()) || i.name.toLowerCase().includes(search.toLowerCase()))" :key="m.id">
-                                                    <div @mousedown="row.itemId = m.id; autoFillFromMaster(row); open = false" 
-                                                         class="p-2 hover:bg-orange-50 cursor-pointer text-[10px] border-b last:border-0">
-                                                        <span class="font-bold text-slate-700" x-text="m.model"></span>
-                                                        <span class="text-orange-500 font-black block text-[9px]" x-text="m.itemCode + ' | ' + m.name"></span>
-                                                    </div>
-                                                </template>
-                                                <div x-show="inventory.filter(i => !search || i.model.toLowerCase().includes(search.toLowerCase()) || i.itemCode.toLowerCase().includes(search.toLowerCase()) || i.name.toLowerCase().includes(search.toLowerCase())).length === 0" 
-                                                     class="p-2 text-slate-400 text-center text-[10px]">
-                                                    ไม่พบข้อมูลวัสดุ
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <p class="hidden print:block font-bold text-slate-500 italic uppercase" x-text="row.model || '-'"></p>
-                                    </td>
-
-                                    <td class="p-2 border text-center">
-                                        <input type="number" x-model.number="row.qty" min="1" 
-                                               @keydown="if(event.key === '-' || event.key === 'e' || event.key === '+'){event.preventDefault();}" 
-                                               @input="if(row.qty < 0) row.qty = Math.abs(row.qty)" 
-                                               @change="if(row.qty < 1 || isNaN(row.qty)) row.qty = 1" 
-                                               class="w-full text-center bg-orange-50 no-print font-black">
-                                        <p class="hidden print:block font-black text-sm" x-text="row.qty || '0'"></p>
-                                    </td>
-
-                                    <td class="p-2 border text-center font-bold text-slate-700 uppercase">
-                                        <select x-model="row.unit" class="w-full bg-transparent no-print outline-none text-center font-bold cursor-pointer">
-                                            <template x-for="un in units">
-                                                <option :value="un" x-text="un" :selected="row.unit === un"></option>
-                                            </template>
-                                        </select>
-                                        <p class="hidden print:block font-bold text-[11px]" x-text="row.unit || '-'"></p>
-                                    </td>
-
-                                    <td class="p-2 border text-center no-print">
-                                        <button @click="removeRow(index)" class="text-red-400 hover:text-red-600 font-black">✕</button>
-                                    </td>
-                                </tr>
-                            </template>
-                        </tbody>
-                    </table>
-
-                    <button @click="addRow()" class="no-print bg-slate-100 text-slate-600 px-3 py-1.5 rounded-lg text-[9px] font-black uppercase hover:bg-slate-200 mb-8 transition shadow-sm">+ Add Item (เพิ่มรายการ)</button>
-
-                    <div class="print-footer mt-auto pt-10 hidden print:flex">
-                        <div class="sig-box text-center">
-                            <div class="sig-line"></div>
-                            <p class="text-[9px] font-black uppercase">Issuer (ผู้จัดทำ)</p>
-                            <p class="text-[8px] text-slate-400">___/___/___</p>
-                        </div>
-                        <div class="sig-box text-center">
-                            <div class="sig-line"></div>
-                            <p class="text-[9px] font-black uppercase">Inspector / ผู้ตรวจสอบ</p>
-                            <p class="text-[8px] text-slate-400">___/___/___</p>
-                        </div>
-                        <div class="sig-box text-center">
-                            <div class="sig-line"></div>
-                            <p class="text-[9px] font-black uppercase">Authorized (ผู้อนุมัติ)</p>
-                            <p class="text-[8px] text-slate-400">___/___/___</p>
-                        </div>
-                    </div>
-
-                    <div class="mt-20 no-print border-t pt-8 flex flex-col items-center">
-                        <button @click="submitTransaction()" class="w-full max-w-md bg-[#002366] text-white p-4 rounded-xl font-bold uppercase text-xs tracking-widest shadow-lg transition hover:bg-blue-800 active:scale-95">
-                            Save Transaction (บันทึกข้อมูลและรออนุมัติ)
+                    <nav class="flex flex-col space-y-1">
+                        <button @click="page = 'dashboard'; sidebarOpen = false" :class="page === 'dashboard' ? 'bg-blue-600 text-white' : 'text-slate-300 hover:bg-slate-900'" class="flex items-center space-x-3 px-4 py-3 rounded-lg text-left text-sm transition-colors">
+                            <span>📊 แดชบอร์ดหลัก (Dashboard)</span>
                         </button>
-                        <p class="text-[10px] text-orange-500 mt-2 font-bold italic">* ข้อมูลจะถูกส่งไปที่หน้า Logs เพื่อรอ Admin ยืนยันตัดสต๊อกจริง</p>
-                    </div>
+                        <button @click="page = 'in'; sidebarOpen = false" :class="page === 'in' ? 'bg-blue-600 text-white' : 'text-slate-300 hover:bg-slate-900'" class="flex items-center space-x-3 px-4 py-3 rounded-lg text-left text-sm transition-colors">
+                            <span>📥 นำเข้าสินค้า (Receive)</span>
+                        </button>
+                        <button @click="page = 'out'; sidebarOpen = false" :class="page === 'out' ? 'bg-blue-600 text-white' : 'text-slate-300 hover:bg-slate-900'" class="flex items-center space-x-3 px-4 py-3 rounded-lg text-left text-sm transition-colors">
+                            <span>📤 เบิกจ่ายสินค้า (Withdraw)</span>
+                        </button>
+                    </nav>
                 </div>
-            </div>
 
-            <!-- [หน้า Settings - การตั้งค่าข้อมูลหลักหมวดหมู่ หน่วย และระบบสินค้าหลังบ้าน] -->
-            <div x-show="page === 'settings'" class="max-w-5xl mx-auto space-y-8 animate-in fade-in">
-                <div class="flex justify-between items-center border-b pb-4">
-                    <h2 class="text-lg font-black text-red-600 uppercase italic tracking-widest">Master Data Setup (การตั้งค่าข้อมูลหลัก)</h2>
-                    <button @click="resetDropdownDefaults()" class="bg-slate-800 text-white hover:bg-black px-3 py-1.5 rounded text-[10px] font-black uppercase tracking-wider transition shadow-sm">
-                        ↺ Restore Dropdown Defaults (คืนค่าตัวเลือกสำรอง)
+                <!-- Bottom Menu Section: ย้าย Log มาอยู่ด้านล่างซ้าย (เหนือ Settings) และปุ่มแสดงบทบาทสิทธิ์/คู่มือการกรอกที่ล่างสุด -->
+                <div class="p-4 border-t border-slate-900 space-y-3">
+                    
+                    <!-- 2. Logs ย้ายลงมาตรงนี้ (เหนือปุ่ม Settings) -->
+                    <button @click="page = 'logs'; sidebarOpen = false" :class="page === 'logs' ? 'bg-blue-600 text-white' : 'text-slate-300 hover:bg-slate-900'" class="w-full flex items-center justify-between px-4 py-3 rounded-lg text-left text-sm transition-colors">
+                        <span class="flex items-center space-x-3">
+                            <span>📋 ประวัติทำรายการ (Logs)</span>
+                        </span>
+                        <template x-if="getPendingCount() > 0">
+                            <span class="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full font-bold" x-text="getPendingCount()"></span>
+                        </template>
                     </button>
-                </div>
-                
-                <div class="grid grid-cols-2 gap-8">
-                    <!-- จัดการหมวดหมู่สินค้า (Categories) -->
-                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                        <h3 class="text-[11px] font-black uppercase text-slate-500 mb-4 border-l-4 border-blue-600 pl-2">Categories (หมวดหมู่สินค้า)</h3>
-                        <div class="flex gap-2 mb-4">
-                            <input type="text" x-model="newCat" class="flex-1 p-2 border rounded text-xs" placeholder="New Category...">
-                            <button @click="addCategory()" class="bg-blue-600 text-white px-4 py-2 rounded font-bold text-[10px] uppercase tracking-widest">Add</button>
-                        </div>
-                        <div class="space-y-1">
-                            <template x-for="(cat, idx) in categories" :key="idx">
-                                <div class="flex justify-between items-center bg-slate-50 p-2 rounded text-[10px] font-bold">
-                                    <span x-text="cat"></span>
-                                    <button @click="removeCategory(idx)" class="text-red-400">✕</button>
-                                </div>
-                            </template>
-                        </div>
-                    </div>
+                    
+                    <button @click="page = 'settings'; sidebarOpen = false" :class="page === 'settings' ? 'bg-blue-600 text-white' : 'text-slate-300 hover:bg-slate-900'" class="w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left text-sm transition-colors">
+                        <span>⚙️ ตั้งค่าคลังสินค้า (Settings)</span>
+                    </button>
 
-                    <!-- จัดการหน่วยนับสินค้า (Units) -->
-                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                        <h3 class="text-[11px] font-black uppercase text-slate-500 mb-4 border-l-4 border-blue-600 pl-2">Units (หน่วยนับ)</h3>
-                        <div class="flex gap-2 mb-4">
-                            <input type="text" x-model="newUnit" class="flex-1 p-2 border rounded text-xs" placeholder="PCS, ROLL, SET...">
-                            <button @click="addUnit()" class="bg-blue-600 text-white px-4 py-2 rounded font-bold text-[10px] uppercase tracking-widest">Add</button>
-                        </div>
-                        <div class="flex flex-wrap gap-2">
-                            <template x-for="(un, idx) in units" :key="idx">
-                                <span class="bg-slate-100 px-3 py-1 rounded-full text-[9px] font-black flex items-center gap-2">
-                                    <span x-text="un"></span>
-                                    <button @click="removeUnit(idx)" class="text-red-500 font-black">×</button>
-                                </span>
-                            </template>
-                        </div>
+                    <!-- 1. ปุ่มแสดงบทบาทและไอคอน (Avatar) สำหรับเปิดคู่มือการกรอกข้อมูลของ User ที่ล่างสุดของเมนู -->
+                    <div class="pt-3 border-t border-slate-900 flex items-center justify-between">
+                        <button @click="userModalOpen = true; sidebarOpen = false" class="flex items-center space-x-3 text-left hover:opacity-85 transition-opacity" title="เปิดดูคู่มือช่วยเหลือ">
+                            <div class="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-black text-sm border-2 border-slate-800 shadow">
+                                <span x-text="userRole === 'admin' ? 'AD' : 'US'"></span>
+                            </div>
+                            <div>
+                                <p class="text-xs font-bold leading-tight" x-text="userRole === 'admin' ? 'Admin CNES' : 'User CNES'"></p>
+                                <span class="text-[10px] text-slate-400 font-semibold underline decoration-blue-500">📖 คู่มือการกรอก</span>
+                            </div>
+                        </button>
+                        <button @click="logout()" class="text-slate-400 hover:text-red-400 transition-colors" title="ออกจากระบบ">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+                        </button>
                     </div>
                 </div>
+            </aside>
 
-                <!-- ตารางหลักจัดการสต๊อกสินค้าหลัก และคอลัมน์ปรับแก้ยอดตามจริง -->
-                <div class="bg-white p-8 rounded-2xl shadow-sm border border-slate-200">
-                    <h3 class="text-[11px] font-black uppercase text-slate-500 mb-6 border-l-4 border-red-600 pl-2">Material Master (จัดการรายชื่อวัสดุและจำนวนแรกเข้า)</h3>
-                    <div class="grid grid-cols-7 gap-3 mb-8 bg-slate-50 p-5 rounded-xl border border-slate-200 items-end">
-                        <div class="col-span-1">
-                            <label class="block text-[9px] font-black uppercase text-slate-400 mb-1">Cat (หมวดหมู่)</label>
-                            <select x-model="newItem.category" @change="generateItemCode()" class="w-full p-2 border rounded text-[11px] font-bold uppercase">
-                                <option value="">- เลือก -</option>
-                                <template x-for="cat in categories"><option :value="cat" x-text="cat"></option></template>
-                            </select>
-                        </div>
-                        <div class="col-span-1 text-orange-600">
-                            <label class="block text-[9px] font-black uppercase text-slate-400 mb-1">Code (รหัส)</label>
-                            <input type="text" x-model="newItem.itemCode" class="w-full p-2 border border-orange-200 bg-white rounded text-[11px] font-black uppercase">
-                        </div>
-                        <div class="col-span-1">
-                            <label class="block text-[9px] font-black uppercase text-slate-400 mb-1">Name (ชื่อวัสดุ)</label>
-                            <input type="text" x-model="newItem.name" class="w-full p-2 border rounded text-[11px] font-bold uppercase">
-                        </div>
-                        <div class="col-span-1">
-                            <label class="block text-[9px] font-black uppercase text-slate-400 mb-1">Model (รุ่น)</label>
-                            <input type="text" x-model="newItem.model" class="w-full p-2 border rounded text-[11px] uppercase text-slate-500">
-                        </div>
-                        <div class="col-span-1">
-                            <label class="block text-[9px] font-black uppercase text-slate-400 mb-1">Location (ตำแหน่ง)</label>
-                            <input type="text" x-model="newItem.location" class="w-full p-2 border rounded text-[11px] uppercase text-slate-500 font-bold" placeholder="A1, คลัง B, ชั้น 2...">
-                        </div>
-                        <div class="col-span-1">
-                            <label class="block text-[9px] font-black uppercase text-slate-400 mb-1 font-black text-red-500">Qty (จำนวนแรกเข้า)</label>
-                            <input type="number" x-model.number="newItem.qty" min="0" 
-                                   @keydown="if(event.key === '-' || event.key === 'e' || event.key === '+'){event.preventDefault();}" 
-                                   @input="if(newItem.qty < 0) newItem.qty = Math.abs(newItem.qty)" 
-                                   @change="if(newItem.qty < 0 || isNaN(newItem.qty)) newItem.qty = 0" 
-                                   class="w-full p-2 border border-red-200 rounded text-[11px] font-black text-red-600">
-                        </div>
-                        <div class="col-span-1">
-                            <label class="block text-[9px] font-black uppercase text-slate-400 mb-1">Unit (หน่วย)</label>
-                            <select x-model="newItem.unit" class="w-full p-2 border rounded text-[11px] font-bold uppercase">
-                                <template x-for="un in units"><option :value="un" x-text="un"></option></template>
-                            </select>
-                        </div>
-                        <div class="col-span-7 mt-2">
-                            <button @click="addMaterial()" class="w-full bg-red-600 text-white p-3 rounded-lg text-[10px] font-black uppercase shadow-md hover:bg-red-700 transition tracking-widest">+ Register New Material to Database</button>
-                        </div>
-                    </div>
+            <!-- พื้นหลังเบลอเมื่อเปิด Sidebar บนหน้าจอมือถือ -->
+            <div x-show="sidebarOpen" @click="sidebarOpen = false" class="fixed inset-0 bg-black/60 z-40 md:hidden" x-transition></div>
 
-                    <table class="w-full text-[10px] border">
-                        <thead class="bg-slate-800 text-white uppercase tracking-tighter">
-                            <tr>
-                                <th class="p-3 text-left w-24">Item Code</th>
-                                <th class="p-3 text-left">Material Description</th>
-                                <th class="p-3 text-left w-32">Model</th>
-                                <th class="p-3 text-left w-24">Location</th>
-                                <th class="p-3">Category</th>
-                                <th class="p-3 text-right">Initial Balance</th>
-                                <th class="p-3 text-center">Unit</th>
-                                <th class="p-3 text-center">Last Updated</th>
-                                <th class="p-3 text-center">Action</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <template x-for="m in getSortedInventory()" :key="m.id">
-                                <tr class="border-b hover:bg-slate-50 transition">
-                                    <td class="p-3 font-black text-slate-600 bg-slate-50" x-text="m.itemCode"></td>
-                                    <td class="p-3 font-bold text-slate-700" x-text="m.name"></td>
-                                    <td class="p-3 text-slate-500 uppercase italic" x-text="m.model"></td>
-                                    <td class="p-3 text-slate-700 font-bold uppercase">
-                                        <input type="text" x-model="m.location" @change="saveData()" class="w-full p-1 border rounded bg-transparent focus:bg-white text-[10px] font-bold text-slate-700 uppercase">
-                                    </td>
-                                    <td class="p-3 text-blue-600 font-bold uppercase" x-text="m.category"></td>
-                                    <td class="p-3 text-right font-black text-sm">
-                                        <div class="flex items-center justify-end gap-1">
-                                            <button @click="m.qty = Math.max(0, parseInt(m.qty || 0) - 1); m.lastUpdated = new Date().toLocaleString('th-TH'); saveData()" class="bg-red-100 text-red-600 px-2 py-1 rounded font-black hover:bg-red-200 transition">-</button>
-                                            <input type="number" x-model.number="m.qty" min="0" 
-                                                   @keydown="if(event.key === '-' || event.key === 'e' || event.key === '+'){event.preventDefault();}" 
-                                                   @input="if(m.qty < 0) m.qty = Math.abs(m.qty); m.lastUpdated = new Date().toLocaleString('th-TH'); saveData()" 
-                                                   @change="if(m.qty < 0 || isNaN(m.qty)) m.qty = 0; m.lastUpdated = new Date().toLocaleString('th-TH'); saveData()" 
-                                                   class="w-16 text-center p-1 border rounded font-black text-blue-700 bg-slate-50 focus:bg-white focus:outline-none">
-                                            <button @click="m.qty = parseInt(m.qty || 0) + 1; m.lastUpdated = new Date().toLocaleString('th-TH'); saveData()" class="bg-green-100 text-green-600 px-2 py-1 rounded font-black hover:bg-green-200 transition">+</button>
-                                        </div>
-                                    </td>
-                                    <td class="p-3 text-center text-slate-400 font-bold uppercase" x-text="m.unit"></td>
-                                    <td class="p-3 text-center text-slate-500 font-semibold" x-text="m.lastUpdated || '-'"></td>
-                                    <td class="p-3 text-center"><button @click="deleteMaterial(m.id)" class="text-red-400 hover:font-bold">Delete</button></td>
-                                </tr>
-                            </template>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <!-- [หน้า Logs View และกลไกแนบเอกสาร PDF ลงเครื่องจริงอัตโนมัติ] -->
-            <div x-show="page === 'logs'" class="max-w-6xl mx-auto animate-in slide-in-from-bottom-4">
-                <h2 class="text-xl font-bold text-slate-800 mb-8 border-b-2 border-orange-400 inline-block uppercase italic tracking-widest font-bold">Transaction Logs & Approval System</h2>
-                
-                <div class="space-y-6">
-                    <template x-for="log in logs" :key="log.id">
-                        <div class="bg-white p-6 rounded-2xl shadow-md border-l-8 transition" :class="log.status === 'PENDING' ? 'border-yellow-400' : (log.status === 'CANCELLED' || log.status === 'EXPIRED' ? 'border-slate-300 bg-slate-50/50' : (log.type === 'OUT' ? 'border-red-500' : 'border-green-500'))">
-                            <div class="flex justify-between items-center mb-4">
-                                <div class="flex items-center gap-3">
-                                    <span :class="log.type === 'OUT' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'" class="px-3 py-1 rounded-full text-[9px] font-black uppercase" x-text="log.type"></span>
-                                    <span :class="log.txnType === 'RESERVE' ? 'bg-orange-100 text-orange-700' : 'bg-slate-100 text-slate-700'" class="px-3 py-1 rounded-full text-[9px] font-black uppercase" x-text="log.txnType"></span>
-                                    <span :class="log.status === 'PENDING' ? 'bg-yellow-100 text-yellow-700 animate-pulse' : (log.status === 'CANCELLED' || log.status === 'EXPIRED' ? 'bg-slate-100 text-slate-500' : 'bg-blue-100 text-blue-700')" class="px-3 py-1 rounded-full text-[9px] font-black uppercase border border-current" x-text="log.status"></span>
-                                    <span class="text-[10px] font-bold text-slate-400" x-text="log.timestamp"></span>
+            <!-- หน้าต่างแสดงเนื้อหาทางขวา (Main Panel) -->
+            <main class="flex-1 md:pl-64 pt-16 md:pt-0 min-h-screen">
+                <div class="p-4 md:p-8 space-y-6">
+                    
+                    <!-- [A] บล็อกการแสดงผล Dashboard -->
+                    <template x-if="page === 'dashboard'">
+                        <div class="space-y-6">
+                            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                                <div>
+                                    <h2 class="text-2xl font-black text-slate-800">📊 ตรวจเช็คปริมาณสต๊อกหลัก (Dashboard)</h2>
+                                    <p class="text-xs text-slate-500">ระบบอัปเดตแบบเรียลไทม์ภายในบริษัท ซีเอ็นอีเอส คอร์ปอเรชั่น จำกัด</p>
                                 </div>
-                                <div class="text-right">
-                                    <p class="text-[9px] font-black text-slate-500 uppercase tracking-widest" x-text="'Operator: ' + log.user"></p>
-                                    <p class="text-[8px] text-slate-300 uppercase" x-text="'Site: ' + log.site"></p>
-                                </div>
+                                <button @click="downloadCSV()" class="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-lg text-sm font-bold flex items-center justify-center gap-2 shadow-sm transition-colors">
+                                    📥 ส่งออกรายงาน CSV
+                                </button>
                             </div>
 
-                            <div class="grid grid-cols-4 gap-3 bg-slate-50 p-4 rounded-xl border border-slate-100">
-                                <template x-for="item in log.items">
-                                    <div class="flex justify-between items-center text-[11px] p-1 border-b border-white last:border-0">
-                                        <div>
-                                            <span class="font-black text-orange-500 mr-1" x-text="item.itemCode"></span>
-                                            <span class="font-bold text-slate-700" x-text="item.name"></span>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+                                <template x-for="cat in categories" :key="cat">
+                                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col">
+                                        <div class="bg-slate-900 text-white px-4 py-3 font-bold text-xs flex justify-between items-center">
+                                            <span x-text="cat"></span>
+                                            <span class="bg-blue-600 text-[10px] px-2.5 py-1 rounded-full font-black" x-text="getInventoryByCategory(cat).length + ' รายการ'"></span>
                                         </div>
-                                        <span class="font-black" :class="log.type === 'OUT' ? 'text-red-500' : 'text-green-600'" x-text="(log.type === 'OUT' ? '-' : '+') + item.qty + ' ' + item.unit"></span>
+                                        <div class="divide-y divide-slate-100 max-h-96 overflow-y-auto flex-1">
+                                            <template x-for="item in getInventoryByCategory(cat)" :key="item.id">
+                                                <div class="p-4 hover:bg-slate-50 transition-colors flex justify-between items-center">
+                                                    <div class="space-y-1 pr-3">
+                                                        <div class="flex items-center gap-2">
+                                                            <span class="text-[10px] font-mono font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded" x-text="item.itemCode"></span>
+                                                            <span class="text-[10px] text-slate-400" x-text="'คลัง: ' + (item.location || 'N/A')"></span>
+                                                        </div>
+                                                        <p class="font-bold text-slate-800 text-sm" x-text="item.name"></p>
+                                                        <p class="text-xs text-slate-400" x-text="'รุ่น: ' + item.model"></p>
+                                                    </div>
+                                                    <div class="text-right flex-shrink-0">
+                                                        <p class="text-lg font-black" :class="item.qty <= 5 ? 'text-red-500' : 'text-slate-800'">
+                                                            <span x-text="item.qty"></span>
+                                                            <span class="text-xs text-slate-500 font-normal ml-0.5" x-text="item.unit"></span>
+                                                        </p>
+                                                        <template x-if="item.reserve_out > 0">
+                                                            <p class="text-[10px] text-amber-600 font-bold" x-text="'จองออก: ' + item.reserve_out"></p>
+                                                        </template>
+                                                    </div>
+                                                </div>
+                                            </template>
+                                            <template x-if="getInventoryByCategory(cat).length === 0">
+                                                <p class="text-center text-slate-400 py-8 text-xs">ไม่มีรายการสินค้าในระบบ</p>
+                                            </template>
+                                        </div>
                                     </div>
                                 </template>
                             </div>
+                        </div>
+                    </template>
 
-                            <div class="mt-6 flex justify-between items-center border-t pt-4">
-                                <div class="flex gap-2">
-                                    <!-- ปุ่มยืนยันการตัดสต๊อก (PENDING) สำหรับแอดมิน -->
-                                    <template x-if="log.status === 'PENDING' && userRole === 'admin'">
-                                        <button @click="approveLog(log.id)" class="bg-blue-600 text-white px-5 py-2 rounded-lg text-[10px] font-black uppercase hover:bg-blue-700 shadow-md transition">✅ ยืนยันการตัดสต๊อก (Approve)</button>
-                                    </template>
-                                    
-                                    <!-- ปุ่มพิมพ์เอกสารฟอร์มขนาด A4 (APPROVED เท่านั้น) -->
-                                    <template x-if="log.status === 'APPROVED'">
-                                        <button @click="printLogData(log)" class="bg-slate-800 text-white px-5 py-2 rounded-lg text-[10px] font-black uppercase hover:bg-black shadow-md transition flex items-center gap-1">🖨️ Print Form A4</button>
-                                    </template>
+                    <!-- [B] หน้าแบบฟอร์มเบิกจ่าย และ นำเข้าสินค้า -->
+                    <template x-if="page === 'in' || page === 'out'">
+                        <div class="max-w-4xl mx-auto bg-white rounded-xl shadow-sm border border-slate-200 p-4 md:p-6 space-y-6">
+                            <div class="border-b border-slate-200 pb-4">
+                                <h2 class="text-xl font-black text-slate-800" x-text="page === 'in' ? '📥 แบบฟอร์มนำเข้าสินค้า (Receive Stock)' : '📤 แบบฟอร์มเบิกจ่ายสินค้า (Withdraw Stock)'"></h2>
+                                <p class="text-xs text-slate-500">ป้อนข้อมูลและค้นหารหัสอุปกรณ์เพื่อเตรียมยื่นเรื่องเพื่อบันทึกประวัติ</p>
+                            </div>
 
-                                    <!-- ปุ่มแอดมินอนุมัติเป็นเบิกจ่ายจริง (Confirm Actual) จากสถานะการจอง -->
-                                    <template x-if="log.status === 'APPROVED' && log.txnType === 'RESERVE' && userRole === 'admin'">
-                                        <button @click="confirmActual(log.id)" class="bg-orange-500 text-white px-5 py-2 rounded-lg text-[10px] font-black uppercase hover:bg-orange-600 shadow-md transition flex items-center gap-1">⚡ ยืนยันเบิกจ่ายจริง (Confirm Actual)</button>
-                                    </template>
-
-                                    <!-- ปุ่มแอดมินกดยกเลิกรายการ (Cancel) ย้อนค่าสต๊อกสินค้าทั้งหมดคืนถาวร -->
-                                    <template x-if="(log.status === 'PENDING' || log.status === 'APPROVED') && userRole === 'admin'">
-                                        <button @click="cancelLog(log.id)" class="bg-red-600 text-white px-5 py-2 rounded-lg text-[10px] font-black uppercase hover:bg-red-700 shadow-md transition flex items-center gap-1">❌ ยกเลิกรายการ (Cancel)</button>
-                                    </template>
+                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-600 mb-1">ชื่อผู้ดำเนินการเบิก/รับ *</label>
+                                    <input type="text" x-model="form.user" placeholder="ชื่อ-นามสกุลจริง" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-1 focus:ring-blue-500 outline-none">
                                 </div>
-                                
-                                <div class="flex items-center gap-2">
-                                    <template x-if="log.status === 'APPROVED'">
-                                        <div class="flex items-center gap-2">
-                                            <template x-if="!log.pdfData">
-                                                <label class="cursor-pointer bg-white border border-slate-300 px-3 py-2 rounded-lg text-[10px] font-bold text-slate-500 hover:bg-slate-50 shadow-sm transition">
-                                                    📎 Attach Signed PDF (แนบไฟล์ที่เซ็นแล้ว)
-                                                    <input type="file" accept="application/pdf" class="hidden" @change="uploadPDF($event, log.id)">
-                                                </label>
-                                            </template>
-                                            <template x-if="log.pdfData">
-                                                <div class="flex items-center gap-1">
-                                                    <a :href="log.pdfData" :download="log.pdfName" class="bg-emerald-50 text-emerald-700 border border-emerald-200 px-3 py-2 rounded-lg text-[10px] font-black hover:bg-emerald-100 shadow-sm transition flex items-center gap-1">
-                                                        📄 View Signed Document
-                                                    </a>
-                                                    <button @click="removePDF(log.id)" class="text-red-400 p-2 hover:text-red-600 font-black">✕</button>
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-600 mb-1">สถานที่ไซต์งาน (Site)</label>
+                                    <input type="text" x-model="form.site" placeholder="ระบุตำแหน่งไซต์งานติดตั้ง" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-1 focus:ring-blue-500 outline-none">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-600 mb-1">ประเภทการจอง/รับจริง *</label>
+                                    <select x-model="form.txnType" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-1 focus:ring-blue-500 outline-none">
+                                        <option value="ACTUAL">ดำเนินการสต๊อกจริงทันที (Actual)</option>
+                                        <option value="RESERVE">สร้างเรื่องจองพัสดุชั่วคราว (Reserve)</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="space-y-4">
+                                <div class="flex justify-between items-center">
+                                    <h3 class="font-bold text-slate-700 text-sm">📋 รายการวัสดุอุปกรณ์</h3>
+                                    <button @click="addRow()" class="text-xs font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1">
+                                        ➕ เพิ่มบรรทัดรายการสินค้า
+                                    </button>
+                                </div>
+
+                                <div class="space-y-3">
+                                    <template x-for="(row, idx) in form.items" :key="idx">
+                                        <div class="p-4 bg-slate-50 rounded-xl border border-slate-200 relative flex flex-col gap-3">
+                                            <button @click="removeRow(idx)" class="absolute top-2 right-2 text-red-500 hover:text-red-700 text-sm">✕</button>
+                                            
+                                            <div class="grid grid-cols-1 sm:grid-cols-12 gap-3 pt-3 sm:pt-0 items-end">
+                                                <div class="sm:col-span-3">
+                                                    <label class="block text-[10px] font-bold text-slate-500 mb-1">ค้นหาจากสินค้าคลังหลัก</label>
+                                                    <select x-model="row.itemId" @change="autoFillFromMaster(row)" class="w-full border border-slate-300 rounded-lg p-2 text-xs bg-white outline-none">
+                                                        <option value="">-- ดึงข้อมูลรหัสหลัก --</option>
+                                                        <template x-for="item in inventory" :key="item.id">
+                                                            <option :value="item.id" x-text="item.itemCode + ' - ' + item.name"></option>
+                                                        </template>
+                                                    </select>
                                                 </div>
-                                            </template>
+                                                <div class="sm:col-span-2">
+                                                    <label class="block text-[10px] font-bold text-slate-500 mb-1">รหัสสินค้า (Item Code)</label>
+                                                    <input type="text" x-model="row.itemCode" @input="autoFillFromCodeText(row)" placeholder="รหัสวัสดุ" class="w-full border border-slate-300 rounded-lg p-2 text-xs uppercase bg-white">
+                                                </div>
+                                                <div class="sm:col-span-3">
+                                                    <label class="block text-[10px] font-bold text-slate-500 mb-1">ชื่อเรียกพัสดุอุปกรณ์</label>
+                                                    <input type="text" x-model="row.name" @input="autoFillFromNameText(row)" placeholder="รายละเอียด" class="w-full border border-slate-300 rounded-lg p-2 text-xs bg-white">
+                                                </div>
+                                                <div class="sm:col-span-2">
+                                                    <label class="block text-[10px] font-bold text-slate-500 mb-1">รุ่นสินค้า</label>
+                                                    <input type="text" x-model="row.model" @input="autoFillFromModelText(row)" placeholder="ระบุรุ่น" class="w-full border border-slate-300 rounded-lg p-2 text-xs bg-white">
+                                                </div>
+                                                <div class="sm:col-span-1">
+                                                    <label class="block text-[10px] font-bold text-slate-500 mb-1">จำนวน</label>
+                                                    <input type="number" x-model.number="row.qty" class="w-full border border-slate-300 rounded-lg p-2 text-xs bg-white">
+                                                </div>
+                                                <div class="sm:col-span-1">
+                                                    <label class="block text-[10px] font-bold text-slate-500 mb-1">หน่วยนับ</label>
+                                                    <select x-model="row.unit" class="w-full border border-slate-300 rounded-lg p-2 text-xs bg-white outline-none">
+                                                        <template x-for="u in units">
+                                                            <option :value="u" x-text="u"></option>
+                                                        </template>
+                                                    </select>
+                                                </div>
+                                            </div>
                                         </div>
                                     </template>
+                                </div>
+                            </div>
+
+                            <div class="pt-4 flex justify-end gap-3 border-t border-slate-100">
+                                <button @click="resetForm()" class="px-5 py-2.5 border border-slate-300 rounded-lg text-sm text-slate-700 hover:bg-slate-50">
+                                    เคลียร์ข้อมูล
+                                </button>
+                                <button @click="submitTransaction()" class="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-bold shadow-sm">
+                                    ยืนยันส่งข้อมูลไปที่ Logs
+                                </button>
+                            </div>
+                        </div>
+                    </template>
+
+                    <!-- [C] บันทึกประวัติและธุรกรรม (Logs Table) -->
+                    <template x-if="page === 'logs'">
+                        <div class="space-y-6">
+                            <div>
+                                <h2 class="text-2xl font-black text-slate-800">📋 ประวัติธุรกรรมและสถานะอนุมัติทั้งหมด (Logs)</h2>
+                                <p class="text-xs text-slate-500">ตรวจสอบและอัปเดตไฟล์เอกสาร PDF หรือสั่งพิมพ์ใบรับสินค้าเพื่อตรวจสอบ</p>
+                            </div>
+
+                            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                                <div class="overflow-x-auto">
+                                    <table class="w-full text-left text-sm whitespace-nowrap">
+                                        <thead>
+                                            <tr class="bg-slate-900 text-white text-[11px] uppercase font-bold">
+                                                <th class="px-6 py-4">ผู้ทำรายการ / เวลา</th>
+                                                <th class="px-6 py-4">ประเภทรายการ</th>
+                                                <th class="px-6 py-4">ไซต์ติดตั้ง (Site)</th>
+                                                <th class="px-6 py-4">รายการสินค้า</th>
+                                                <th class="px-6 py-4">สถานะอนุมัติ</th>
+                                                <th class="px-6 py-4 text-right">ดำเนินการ</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="divide-y divide-slate-100">
+                                            <template x-for="log in logs" :key="log.id">
+                                                <tr class="hover:bg-slate-50">
+                                                    <td class="px-6 py-4">
+                                                        <p class="font-bold text-slate-800" x-text="log.user"></p>
+                                                        <span class="text-[10px] text-slate-400" x-text="log.timestamp"></span>
+                                                    </td>
+                                                    <td class="px-6 py-4">
+                                                        <span :class="log.type === 'IN' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-rose-50 text-rose-700 border-rose-200'" class="px-2.5 py-1 text-[10px] font-bold rounded-full border" x-text="log.type + ' (' + log.txnType + ')'"></span>
+                                                    </td>
+                                                    <td class="px-6 py-4 text-slate-600 text-xs" x-text="log.site || '-'"></td>
+                                                    <td class="px-6 py-4 min-w-[200px]">
+                                                        <div class="space-y-1">
+                                                            <template x-for="row in log.items">
+                                                                <div class="text-[11px] flex justify-between gap-4 bg-slate-100 p-1.5 rounded border border-slate-200">
+                                                                    <span class="font-bold text-slate-700" x-text="row.itemCode"></span>
+                                                                    <span class="text-slate-600" x-text="row.name"></span>
+                                                                    <span class="font-bold text-blue-600" x-text="row.qty + ' ' + row.unit"></span>
+                                                                </div>
+                                                            </template>
+                                                        </div>
+                                                    </td>
+                                                    <td class="px-6 py-4">
+                                                        <span :class="{
+                                                            'bg-amber-100 text-amber-800 border-amber-300': log.status === 'PENDING',
+                                                            'bg-emerald-100 text-emerald-800 border-emerald-300': log.status === 'APPROVED',
+                                                            'bg-rose-100 text-rose-800 border-rose-300': log.status === 'CANCELLED',
+                                                            'bg-slate-100 text-slate-600 border-slate-300': log.status === 'EXPIRED'
+                                                        }" class="px-2.5 py-1 text-[10px] font-bold rounded-full border" x-text="log.status"></span>
+                                                    </td>
+                                                    <td class="px-6 py-4 text-right">
+                                                        <div class="flex flex-col gap-1.5">
+                                                            <div class="flex flex-wrap gap-1 justify-end">
+                                                                <button @click="printLogData(log)" class="bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-bold px-2.5 py-1 rounded">
+                                                                    🖨️ สั่งพิมพ์
+                                                                </button>
+                                                                <template x-if="!log.pdfData">
+                                                                    <label class="bg-slate-600 hover:bg-slate-700 text-white text-[10px] font-bold px-2.5 py-1 rounded cursor-pointer inline-block">
+                                                                        📎 แนบ PDF
+                                                                        <input type="file" @change="uploadPDF($event, log.id)" class="hidden">
+                                                                    </label>
+                                                                </template>
+                                                                <template x-if="log.pdfData">
+                                                                    <div class="flex items-center gap-1">
+                                                                        <a :href="log.pdfData" :download="log.pdfName" class="bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-bold px-2.5 py-1 rounded">
+                                                                            📥 โหลด PDF
+                                                                        </a>
+                                                                        <button @click="removePDF(log.id)" class="text-red-500 hover:text-red-700 font-bold">✕</button>
+                                                                    </div>
+                                                                </template>
+                                                            </div>
+                                                            <div class="flex flex-wrap gap-1 justify-end">
+                                                                <template x-if="userRole === 'admin' && log.status === 'PENDING'">
+                                                                    <button @click="approveLog(log.id)" class="bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-bold px-2.5 py-1 rounded">
+                                                                        ✅ อนุมัติสต๊อก
+                                                                    </button>
+                                                                </template>
+                                                                <template x-if="userRole === 'admin' && log.txnType === 'RESERVE' && log.status === 'APPROVED'">
+                                                                    <button @click="confirmActual(log.id)" class="bg-sky-600 hover:bg-sky-700 text-white text-[10px] font-bold px-2.5 py-1 rounded">
+                                                                        📦 อัปเดตจ่ายจริง
+                                                                    </button>
+                                                                </template>
+                                                                <template x-if="log.status !== 'CANCELLED' && log.status !== 'EXPIRED'">
+                                                                    <button @click="cancelLog(log.id)" class="bg-rose-600 hover:bg-rose-700 text-white text-[10px] font-bold px-2.5 py-1 rounded">
+                                                                        ❌ ยกเลิก
+                                                                    </button>
+                                                                </template>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            </template>
+                                            <template x-if="logs.length === 0">
+                                                <tr>
+                                                    <td colspan="6" class="text-center text-slate-400 py-12 text-xs">ไม่มีรายการธุรกรรมประวัติเก็บไว้</td>
+                                                </tr>
+                                            </template>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+
+                    <!-- [D] หน้าตั้งค่าและจัดการสต๊อก (Settings) -->
+                    <template x-if="page === 'settings'">
+                        <div class="space-y-8">
+                            <div class="border-b border-slate-200 pb-4">
+                                <h2 class="text-2xl font-black text-slate-800">⚙️ การจัดการข้อมูลสินค้าหลักและการตั้งค่า (Settings)</h2>
+                            </div>
+
+                            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-4">
+                                    <h3 class="font-bold text-slate-800 text-sm">📁 จัดการกลุ่มหมวดหมู่</h3>
+                                    <div class="flex gap-2">
+                                        <input type="text" x-model="newCat" placeholder="ระบุหมวดหมู่" class="flex-1 border border-slate-300 rounded-lg p-2 text-xs outline-none">
+                                        <button @click="addCategory()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-xs font-bold">เพิ่ม</button>
+                                    </div>
+                                    <div class="flex flex-wrap gap-2">
+                                        <template x-for="(cat, idx) in categories" :key="idx">
+                                            <span class="inline-flex items-center gap-1 bg-slate-50 text-slate-800 text-xs font-bold px-3 py-1.5 rounded-full border border-slate-200">
+                                                <span x-text="cat"></span>
+                                                <button @click="removeCategory(idx)" class="text-red-500 hover:text-red-700 font-bold ml-1">✕</button>
+                                            </span>
+                                        </template>
+                                    </div>
+                                </div>
+
+                                <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-4">
+                                    <h3 class="font-bold text-slate-800 text-sm">📏 จัดการหน่วยนับสินค้า</h3>
+                                    <div class="flex gap-2">
+                                        <input type="text" x-model="newUnit" placeholder="ระบุหน่วยนับ" class="flex-1 border border-slate-300 rounded-lg p-2 text-xs outline-none">
+                                        <button @click="addUnit()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-xs font-bold">เพิ่ม</button>
+                                    </div>
+                                    <div class="flex flex-wrap gap-2">
+                                        <template x-for="(unit, idx) in units" :key="idx">
+                                            <span class="inline-flex items-center gap-1 bg-slate-50 text-slate-800 text-xs font-bold px-3 py-1.5 rounded-full border border-slate-200">
+                                                <span x-text="unit"></span>
+                                                <button @click="removeUnit(idx)" class="text-red-500 hover:text-red-700 font-bold ml-1">✕</button>
+                                            </span>
+                                        </template>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-4">
+                                <h3 class="font-bold text-slate-800 text-sm">➕ ลงทะเบียนบันทึกรหัสวัสดุใหม่</h3>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                                    <div>
+                                        <label class="block text-xs font-bold text-slate-500 mb-1">กลุ่มสินค้าหลัก *</label>
+                                        <select x-model="newItem.category" @change="generateItemCode()" class="w-full border border-slate-300 rounded-lg p-2 text-xs bg-white outline-none">
+                                            <option value="">เลือกเพื่อคำนวณโค้ด</option>
+                                            <template x-for="cat in categories">
+                                                <option :value="cat" x-text="cat"></option>
+                                            </template>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-bold text-slate-500 mb-1">รหัสสินค้าอัตโนมัติ (Item Code)</label>
+                                        <input type="text" x-model="newItem.itemCode" placeholder="รหัสวัสดุ" class="w-full border border-slate-300 rounded-lg p-2 text-xs uppercase bg-white">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-bold text-slate-500 mb-1">ชื่อเรียกอุปกรณ์ที่เก็บ *</label>
+                                        <input type="text" x-model="newItem.name" placeholder="ระบุรายละเอียด" class="w-full border border-slate-300 rounded-lg p-2 text-xs bg-white">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-bold text-slate-500 mb-1">รุ่นวัสดุ (Model)</label>
+                                        <input type="text" x-model="newItem.model" placeholder="ระบุรุ่น" class="w-full border border-slate-300 rounded-lg p-2 text-xs bg-white">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-bold text-slate-500 mb-1">ชั้นวางจัดเก็บ (Location)</label>
+                                        <input type="text" x-model="newItem.location" placeholder="เช่น Rack A" class="w-full border border-slate-300 rounded-lg p-2 text-xs bg-white">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-bold text-slate-500 mb-1">หน่วยนับ</label>
+                                        <select x-model="newItem.unit" class="w-full border border-slate-300 rounded-lg p-2 text-xs bg-white outline-none">
+                                            <template x-for="u in units">
+                                                <option :value="u" x-text="u"></option>
+                                            </template>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-bold text-slate-500 mb-1">จำนวนคงเหลือแรกเริ่ม</label>
+                                        <input type="number" x-model.number="newItem.qty" class="w-full border border-slate-300 rounded-lg p-2 text-xs bg-white">
+                                    </div>
+                                </div>
+                                <div class="flex justify-end pt-2">
+                                    <button @click="addMaterial()" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg text-xs font-bold shadow-sm transition-colors">
+                                        ยืนยันลงทะเบียนข้อมูลวัสดุ
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                                <div class="p-4 border-b border-slate-200 flex justify-between items-center bg-slate-50 flex-col sm:flex-row gap-3">
+                                    <h3 class="font-bold text-slate-800 text-sm">📋 บัญชีและประเภทพัสดุพ่วงสต๊อก</h3>
+                                    <button @click="resetDropdownDefaults()" class="text-xs text-red-500 hover:text-red-700 underline font-bold">กู้คืนตัวเลือกหมวดหมู่เริ่มต้น</button>
+                                </div>
+                                <div class="overflow-x-auto">
+                                    <table class="w-full text-left text-xs whitespace-nowrap">
+                                        <thead>
+                                            <tr class="bg-slate-900 text-white font-bold uppercase">
+                                                <th class="px-6 py-3">รหัสพัสดุ</th>
+                                                <th class="px-6 py-3">ชื่อรายละเอียดและรุ่น</th>
+                                                <th class="px-6 py-3">ตำแหน่งที่เก็บ</th>
+                                                <th class="px-6 py-3">คงเหลือคลังจริง</th>
+                                                <th class="px-6 py-3">ยอดจอง (Out/In)</th>
+                                                <th class="px-6 py-3">การทำรายการ</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="divide-y divide-slate-100">
+                                            <template x-for="item in getSortedInventory()" :key="item.id">
+                                                <tr class="hover:bg-slate-50">
+                                                    <td class="px-6 py-4 font-mono font-bold text-blue-600" x-text="item.itemCode"></td>
+                                                    <td class="px-6 py-4">
+                                                        <p class="font-bold text-slate-800" x-text="item.name"></p>
+                                                        <span class="text-[10px] text-slate-400" x-text="'Model: ' + item.model"></span>
+                                                    </td>
+                                                    <td class="px-6 py-4 text-slate-600" x-text="item.location || 'N/A'"></td>
+                                                    <td class="px-6 py-4">
+                                                        <span class="font-bold text-slate-800" x-text="item.qty"></span>
+                                                        <span class="text-slate-500" x-text="item.unit"></span>
+                                                    </td>
+                                                    <td class="px-6 py-4">
+                                                        <span class="text-orange-600 font-bold" x-text="'-' + (item.reserve_out || 0)"></span> / 
+                                                        <span class="text-emerald-600 font-bold" x-text="'+' + (item.reserve_in || 0)"></span>
+                                                    </td>
+                                                    <td class="px-6 py-4">
+                                                        <button @click="deleteMaterial(item.id)" class="text-red-600 hover:text-red-700 font-bold">🗑️ ลบ</button>
+                                                    </td>
+                                                </tr>
+                                            </template>
+                                        </tbody>
+                                    </table>
                                 </div>
                             </div>
                         </div>
                     </template>
                 </div>
+            </main>
+        </div>
+    </template>
+
+    <!-- [3] 1. หน้าต่างคู่มือช่วยเหลือผู้ใช้งานทั่วไป (User Manual Modal) เมื่อกดปุ่มกลมด้านล่างซ้าย -->
+    <div x-show="userModalOpen" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4" x-transition>
+        <div @click.away="userModalOpen = false" class="bg-white rounded-xl shadow-2xl border border-slate-200 max-w-lg w-full overflow-hidden">
+            <div class="bg-slate-950 text-white p-4 flex justify-between items-center">
+                <h3 class="font-bold text-sm flex items-center gap-2">
+                    📖 คู่มือการใช้งานสำหรับ User ในการกรอกข้อมูล
+                </h3>
+                <button @click="userModalOpen = false" class="text-slate-400 hover:text-white">✕</button>
             </div>
+            <div class="p-6 space-y-4 max-h-[80vh] overflow-y-auto">
+                
+                <div class="bg-blue-50 border-l-4 border-blue-600 p-4 rounded-r-lg">
+                    <p class="text-xs text-blue-800 font-bold">💡 ข้อแนะนำเบื้องต้น</p>
+                    <p class="text-[11px] text-blue-700 mt-1">ผู้ใช้สิทธิ์ทั่วไป (User PIN: 111111) สามารถส่งคำร้องขอนำเข้า (Receive) หรือเบิกจ่าย (Withdraw) อุปกรณ์ได้ โดยรายการจะยังไม่หักลบจำนวนจริงในสต๊อกจนกว่า แอดมิน (Admin) จะกดตรวจสอบอนุมัติ [1]</p>
+                </div>
 
-            <!-- [เทมเพลตซ่อนสำหรับจัดทำหน้าปริ้นท์ - Hidden Print Template] -->
-            <div id="logPrintArea" class="hidden h-screen bg-white">
-                <template x-if="printData">
-                    <div class="p-12">
-                        <div class="flex justify-between items-start pb-6 mb-6 border-b-2 border-black">
-                            <div class="flex items-center gap-4">
-                                <img src="logo.jpg" alt="Christiani & Nielsen Energy Solutions Logo" class="h-12 w-auto object-contain bg-white rounded p-0.5">
-                                <div>
-                                    <h1 class="text-base font-black text-[#002366] leading-tight text-xl uppercase">CHRISTIANI & NIELSEN ENERGY SOLUTIONS</h1>
-                                    <p class="text-[12px] font-bold text-slate-500 uppercase tracking-widest mt-1">
-                                        <span x-text="printData.type === 'OUT' ? 'Material Withdrawal Form (ใบเบิกวัสดุ)' : 'Material Storage Form (ใบนำวัสดุเข้าคลัง)'"></span>
-                                        <span x-show="printData.txnType === 'RESERVE'" class="text-orange-600 font-black"> [RESERVATION]</span>
-                                    </p>
-                                </div>
-                            </div>
-                            <div class="text-right text-[11px] font-bold space-y-1">
-                                <p>Transaction ID: <span x-text="printData.id"></span></p>
-                                <p>Approved Date: <span x-text="printData.timestamp"></span></p>
-                            </div>
-                        </div>
-                        
-                        <div class="grid grid-cols-2 gap-10 mb-10 text-[12px] p-4 bg-slate-50 rounded">
-                            <p class="border-b border-black pb-1">Operator: <span class="font-bold ml-2" x-text="printData.user"></span></p>
-                            <p class="border-b border-black pb-1">Site/Project: <span class="font-bold ml-2" x-text="printData.site"></span></p>
-                        </div>
-
-                        <table class="w-full border-collapse border border-black mb-20 text-[11px]">
-                            <thead class="bg-gray-100">
-                                <tr>
-                                    <th class="border border-black p-2 text-left">Code (รหัส)</th>
-                                    <th class="border border-black p-2 text-left">Description (รายการวัสดุ)</th>
-                                    <th class="border border-black p-2 text-center">Qty (จำนวน)</th>
-                                    <th class="border border-black p-2 text-center">Unit (หน่วย)</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <template x-for="item in printData.items">
-                                    <tr>
-                                        <td class="border border-black p-2 font-bold" x-text="item.itemCode"></td>
-                                        <td class="border border-black p-2 font-bold" x-text="item.name + ' [' + item.model + ']'"></td>
-                                        <td class="border border-black p-2 text-center font-black" x-text="printData.items.length ? item.qty : 0"></td>
-                                        <td class="border border-black p-2 text-center uppercase" x-text="item.unit"></td>
-                                    </tr>
-                                </template>
-                            </tbody>
-                        </table>
-
-                        <div class="flex justify-between mt-auto pt-20 px-10">
-                            <div class="text-center w-40">
-                                <div class="border-b border-black h-10 mb-2"></div>
-                                <p class="text-[10px] font-bold">Issuer / ผู้จัดทำ</p>
-                            </div>
-                            <div class="text-center w-40">
-                                <div class="border-b border-black h-10 mb-2"></div>
-                                <p class="text-[10px] font-bold">Inspector / ผู้ตรวจสอบ</p>
-                            </div>
-                            <div class="text-center w-40">
-                                <div class="border-b border-black h-10 mb-2"></div>
-                                <p class="text-[10px] font-bold">Admin Approved / ผู้อนุมัติ</p>
-                            </div>
+                <!-- ขั้นตอนคู่มืออย่างละเอียดสำหรับการใช้คลังสินค้า CNES -->
+                <div class="space-y-4">
+                    <h4 class="text-xs font-black text-slate-800 uppercase tracking-wider border-b border-slate-200 pb-1">📋 ขั้นตอนกรอกแบบฟอร์มเบิกจ่ายและนำเข้า</h4>
+                    
+                    <div class="flex gap-3">
+                        <div class="w-6 h-6 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-xs flex-shrink-0">1</div>
+                        <div class="text-xs text-slate-600">
+                            <p class="font-bold text-slate-800">เลือกประเภทความประสงค์ในการทำธุรกรรม</p>
+                            <p class="mt-0.5">เลือกเมนู <strong>นำเข้าสินค้า (Receive)</strong> เพื่อนำพัสดุเข้าคลัง หรือเลือกเมนู <strong>เบิกจ่ายสินค้า (Withdraw)</strong> เพื่อตัดยอดสินค้าออกจากคลัง [1]</p>
                         </div>
                     </div>
-                </template>
+
+                    <div class="flex gap-3">
+                        <div class="w-6 h-6 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-xs flex-shrink-0">2</div>
+                        <div class="text-xs text-slate-600">
+                            <p class="font-bold text-slate-800">ระบุรายละเอียดผู้เบิกและไซต์งานปลายทาง</p>
+                            <p class="mt-0.5">กรอกชื่อจริงในช่อง "ชื่อผู้ดำเนินการเบิก/รับ" และระบุชื่อไซต์งานที่ต้องการนำวัสดุไปใช้งานในช่อง "สถานที่ไซต์งาน" [1]</p>
+                        </div>
+                    </div>
+
+                    <div class="flex gap-3">
+                        <div class="w-6 h-6 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-xs flex-shrink-0">3</div>
+                        <div class="text-xs text-slate-600">
+                            <p class="font-bold text-slate-800">ดึงข้อมูลพัสดุเพื่อกรอกแบบกึ่งอัตโนมัติ</p>
+                            <p class="mt-0.5">คลิกที่ช่อง <strong>"ค้นหาจากสินค้าคลังหลัก"</strong> เพื่อดึงรหัสที่เคยลงทะเบียน ระบบจะกรอกรหัส ชื่อ และรุ่นให้อัตโนมัติ ป้องกันข้อมูลตกหล่น [1]</p>
+                        </div>
+                    </div>
+
+                    <div class="flex gap-3">
+                        <div class="w-6 h-6 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-xs flex-shrink-0">4</div>
+                        <div class="text-xs text-slate-600">
+                            <p class="font-bold text-slate-800">การกรอกข้อมูลพัสดุด้วยตนเอง (Manual)</p>
+                            <p class="mt-0.5">หากไม่พบพัสดุที่ต้องการในรายการหลัก สามารถพิมพ์รหัสสินค้า ชื่องาน และรุ่นลงในช่องป้อนรหัสโดยตรงเพื่อส่งคำร้องอนุมัติพัสดุจรชั่วคราว [1]</p>
+                        </div>
+                    </div>
+
+                    <div class="flex gap-3">
+                        <div class="w-6 h-6 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-xs flex-shrink-0">5</div>
+                        <div class="text-xs text-slate-600">
+                            <p class="font-bold text-slate-800">ระบุจำนวนที่ต้องการและส่งขออนุมัติ</p>
+                            <p class="mt-0.5">ระบุยอดที่ต้องการเบิก ตรวจสอบ "หน่วยนับ" ให้สัมพันธ์กับหน้า Dashboard แล้วกดปุ่ม <strong>"ยืนยันส่งข้อมูลไปที่ Logs"</strong> [1]</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="pt-2">
+                    <button @click="userModalOpen = false" class="w-full bg-slate-900 hover:bg-slate-800 text-white p-2.5 rounded-lg text-xs font-bold transition-colors">
+                        รับทราบและเข้าใจขั้นตอน
+                    </button>
+                </div>
             </div>
-        </main>
+        </div>
     </div>
 
-    <!-- เรียกใช้สคริปต์หลักภายนอกเพื่อประมวลผลระบบร่วมกับเครื่องหลังบ้าน Node.js -->
-    <script src="script.js"></script>
+    <!-- [4] แผ่นสลิปพิมพ์เอกสาร (Print Template - เผื่อกรณีพิมพ์รายงานตรวจสอบ) -->
+    <div x-show="printData" class="fixed inset-0 bg-white z-[120] p-8 flex flex-col justify-between" id="printable-area">
+        <template x-if="printData">
+            <div class="space-y-6">
+                <div class="flex justify-between items-start border-b-2 border-slate-900 pb-4">
+                    <div>
+                        <h1 class="text-xl font-black text-slate-900">CNES CORPORATION CO., LTD.</h1>
+                        <p class="text-[10px] text-slate-500">บริษัท ซีเอ็นอีเอส คอร์ปอเรชั่น จำกัด</p>
+                    </div>
+                    <div class="text-right">
+                        <h2 class="text-md font-bold text-slate-800" x-text="printData.type + ' STOCK SLIP'"></h2>
+                        <p class="text-[10px] text-slate-400" x-text="'Ref ID: ' + printData.id"></p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4 text-xs text-slate-700">
+                    <div>
+                        <p class="font-bold">ข้อมูลผู้ขอทำรายการ:</p>
+                        <p x-text="'ชื่อผู้ดำเนินการ: ' + printData.user"></p>
+                        <p x-text="'สถานที่ไซต์งาน (Site): ' + (printData.site || 'N/A')"></p>
+                    </div>
+                    <div class="text-right">
+                        <p class="font-bold">รายละเอียดเวลา:</p>
+                        <p x-text="'วันเวลาดำเนินการ: ' + printData.timestamp"></p>
+                        <p x-text="'ประเภทธุรกรรม: ' + printData.txnType"></p>
+                    </div>
+                </div>
+
+                <table class="w-full text-xs text-left border-collapse border border-slate-300">
+                    <thead>
+                        <tr class="bg-slate-100 text-slate-800 border-b border-slate-300 font-bold">
+                            <th class="border border-slate-300 p-2">รหัสสินค้า</th>
+                            <th class="border border-slate-300 p-2">รายการวัสดุ</th>
+                            <th class="border border-slate-300 p-2">รุ่นพัสดุ</th>
+                            <th class="border border-slate-300 p-2 text-right">จำนวน</th>
+                            <th class="border border-slate-300 p-2">หน่วย</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <template x-for="row in printData.items">
+                            <tr class="border-b border-slate-200">
+                                <td class="border border-slate-300 p-2 font-mono font-bold" x-text="row.itemCode"></td>
+                                <td class="border border-slate-300 p-2" x-text="row.name"></td>
+                                <td class="border border-slate-300 p-2" x-text="row.model"></td>
+                                <td class="border border-slate-300 p-2 text-right font-bold" x-text="row.qty"></td>
+                                <td class="border border-slate-300 p-2" x-text="row.unit"></td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+
+                <div class="grid grid-cols-2 gap-8 pt-12 text-xs text-center">
+                    <div class="space-y-8">
+                        <p>ผู้เบิก / รับของ: ................................................................</p>
+                        <p x-text="'( ' + printData.user + ' )'"></p>
+                    </div>
+                    <div class="space-y-8">
+                        <p>ผู้ควบคุมคลัง: ................................................................</p>
+                        <p>( แอดมินตรวจสอบ )</p>
+                    </div>
+                </div>
+            </div>
+        </template>
+    </div>
+
+    <!-- สไตล์จำกัดขอบเขตการพิมพ์หน้าต่าง Printable ออกมาเฉพาะแผ่นสลิปหลัก -->
+    <style>
+        @media print {
+            body * { visibility: hidden !important; }
+            #printable-area, #printable-area * { visibility: visible !important; }
+            #printable-area { position: absolute !important; left: 0 !important; top: 0 !important; width: 100% !important; }
+        }
+    </style>
 </body>
 </html>
