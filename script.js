@@ -29,7 +29,40 @@ function cnesApp() {
             try { this.categories = JSON.parse(localStorage.getItem('cnes_v177_cats')) || []; } catch(e) { this.categories = []; }
             try { this.units = JSON.parse(localStorage.getItem('cnes_v177_units')) || []; } catch(e) { this.units = []; }
 
-            // รันเรียกข้อมูลล่าสุดของส่วนกลางจาก data.json หลังบ้านมาซิงก์ทับเพื่อให้อุปกรณ์ทุกเครื่องแสดงยอดตรงกัน
+            // ดึงข้อมูลหลักจากเซิร์ฟเวอร์
+            await this.fetchServerData();
+
+            // ตั้งเวลารันซิงก์ข้อมูลกับเซิร์ฟเวอร์หลักอัตโนมัติทุกๆ 5 วินาที เพื่อให้อุปกรณ์ทุกเครื่อง (Mobile/PC) แสดงยอดตรงกันตลอดเวลา [ข้อ 1]
+            setInterval(() => {
+                this.fetchServerData();
+            }, 5000);
+
+            // ระบบสำรองคลังข้อมูลตัวเลือกในกรณีที่ถูกแอดมินล้างออกหมด (Dropdown Fallback)
+            if (!this.categories || this.categories.length === 0) {
+                this.categories = ['PV Module', 'Inverter', 'Cables', 'BOS', 'Tools', 'Mounting', 'Grounding'];
+            }
+            if (!this.units || this.units.length === 0) {
+                this.units = ['Panel','Pcs', 'Set', 'Roll', 'BOX', 'Meter'];
+            }
+            
+            // รันการตรวจสอบการหมดอายุการจองสินค้า (30 วัน) อัตโนมัติในตอนโหลดข้อมูลเริ่มต้น
+            this.checkExpiredReservations();
+            
+            this.resetForm();
+            
+            // ปรับไปเช็กเซสชันจาก sessionStorage เพื่อให้สามารถเปิดล็อกอิน User และ Admin ทิ้งไว้พร้อมกันคนละแท็บได้
+            const savedRole = sessionStorage.getItem('cnes_v177_role');
+            if(savedRole) { 
+                this.isLoggedIn = true; 
+                this.userRole = savedRole; 
+                if (this.userRole !== 'admin' && this.page === 'settings') {
+                    this.page = 'dashboard';
+                }
+            }
+        },
+
+        // ดึงข้อมูลล่าสุดจากหลังบ้านมาปรับปรุงคลังในเครื่อง เพื่อให้มือถือและ PC/Notebook ซิงก์ข้อมูลชุดเดียวกัน [ข้อ 1]
+        async fetchServerData() {
             try {
                 const res = await fetch('/api/data');
                 if (res.ok) {
@@ -50,23 +83,6 @@ function cnesApp() {
             } catch (err) {
                 console.log("เซิร์ฟเวอร์หลังบ้านออฟไลน์ รันระบบด้วยฐานข้อมูลเบราว์เซอร์ภายในชั่วคราว");
             }
-
-            // ระบบสำรองคลังข้อมูลตัวเลือกในกรณีที่ถูกแอดมินล้างออกหมด (Dropdown Fallback)
-            if (!this.categories || this.categories.length === 0) {
-                this.categories = ['PV Module', 'Inverter', 'Cables', 'BOS', 'Tools', 'Mounting', 'Grounding'];
-            }
-            if (!this.units || this.units.length === 0) {
-                this.units = ['Panel','Pcs', 'Set', 'Roll', 'BOX', 'Meter'];
-            }
-            
-            // รันการตรวจสอบการหมดอายุการจองสินค้า (30 วัน) อัตโนมัติในตอนโหลดข้อมูลเริ่มต้น
-            this.checkExpiredReservations();
-            
-            this.resetForm();
-            
-            // ปรับไปเช็กเซสชันจาก sessionStorage เพื่อให้สามารถเปิดล็อกอิน User และ Admin ทิ้งไว้พร้อมกันคนละแท็บได้
-            const savedRole = sessionStorage.getItem('cnes_v177_role');
-            if(savedRole) { this.isLoggedIn = true; this.userRole = savedRole; }
         },
 
         // [2] ระบบตรวจสอบ Login
@@ -75,6 +91,12 @@ function cnesApp() {
             else if (this.loginPin === '111111') { this.userRole = 'user'; }
             else { alert('PIN ไม่ถูกต้อง!'); return; }
             this.isLoggedIn = true;
+
+            // บังคับเปลี่ยนหน้าไป Dashboard หาก User เข้าล็อกอิน เพื่อป้องกันการมองเห็นหน้า Settings [ข้อ 2]
+            if (this.userRole !== 'admin' && this.page === 'settings') {
+                this.page = 'dashboard';
+            }
+
             // บันทึกสถานะบทบาทแยกระดับ Tab ด้วย sessionStorage ทำให้เปิดสลับแท็บรัน User / Admin ได้อิสระ
             sessionStorage.setItem('cnes_v177_role', this.userRole);
             this.loginPin = '';
@@ -125,46 +147,51 @@ function cnesApp() {
             }
         },
 
-        // ค้นหาและเชื่อมโยงข้อมูลวัสดุจากข้อความของ Code ที่ผู้ใช้งานคีย์กรอกเข้ามา
+        // ฟังก์ชันระบบค้นหาและเชื่อมโยงข้อมูลวัสดุอัตโนมัติจากคำค้นหาในทุกช่อง (Code / Description / Model) [ข้อ 3]
+        smartAutoFill(row, queryText) {
+            if (!queryText || !queryText.trim()) {
+                row.itemId = '';
+                return;
+            }
+            const q = queryText.trim().toUpperCase();
+
+            // 1. ค้นหาแบบตรงตัวก่อน (Exact Match)
+            let master = this.inventory.find(i => 
+                (i.itemCode && i.itemCode.toUpperCase() === q) ||
+                (i.name && i.name.toUpperCase() === q) ||
+                (i.model && i.model.toUpperCase() === q)
+            );
+
+            // 2. หากไม่เจอ ให้ค้นหาแบบคำย่อย/ส่วนหนึ่งของข้อความ (Partial Match)
+            if (!master && q.length >= 2) {
+                master = this.inventory.find(i => 
+                    (i.itemCode && i.itemCode.toUpperCase().includes(q)) ||
+                    (i.name && i.name.toUpperCase().includes(q)) ||
+                    (i.model && i.model.toUpperCase().includes(q))
+                );
+            }
+
+            if (master) {
+                row.itemId = master.id;
+                row.itemCode = master.itemCode;
+                row.name = master.name;
+                row.model = master.model;
+                row.unit = master.unit;
+            } else {
+                row.itemId = ''; // หากไม่พบ สามารถให้สิทธิ์คีย์แมนนวลต่อได้
+            }
+        },
+
         autoFillFromCodeText(row) {
-            const master = this.inventory.find(i => i.itemCode.toUpperCase() === row.itemCode.toUpperCase());
-            if (master) {
-                row.itemId = master.id;
-                row.itemCode = master.itemCode;
-                row.name = master.name;
-                row.model = master.model;
-                row.unit = master.unit;
-            } else {
-                row.itemId = ''; // เป็นค่าว่างเพื่อส่งต่อให้สิทธิ์คีย์แมนนวลแบบมี ID ชั่วคราวต่อไป
-            }
+            this.smartAutoFill(row, row.itemCode);
         },
 
-        // ค้นหาและเชื่อมโยงข้อมูลวัสดุจากข้อความของ Description ที่ผู้ใช้งานคีย์กรอกเข้ามา
         autoFillFromNameText(row) {
-            const master = this.inventory.find(i => i.name.toUpperCase() === row.name.toUpperCase());
-            if (master) {
-                row.itemId = master.id;
-                row.itemCode = master.itemCode;
-                row.name = master.name;
-                row.model = master.model;
-                row.unit = master.unit;
-            } else {
-                row.itemId = '';
-            }
+            this.smartAutoFill(row, row.name);
         },
 
-        // ค้นหาและเชื่อมโยงข้อมูลวัสดุจากข้อความของ Model ที่ผู้ใช้งานคีย์กรอกเข้ามา
         autoFillFromModelText(row) {
-            const master = this.inventory.find(i => i.model.toUpperCase() === row.model.toUpperCase());
-            if (master) {
-                row.itemId = master.id;
-                row.itemCode = master.itemCode;
-                row.name = master.name;
-                row.model = master.model;
-                row.unit = master.unit;
-            } else {
-                row.itemId = '';
-            }
+            this.smartAutoFill(row, row.model);
         },
 
         // [4] การบันทึกส่งเรื่องร้องขอเบิกจ่ายวัสดุอุปกรณ์

@@ -89,9 +89,12 @@
                     </template>
                 </button>
                 
-                <button @click="page = 'settings'; sidebarOpen = false" :class="page === 'settings' ? 'bg-blue-600 text-white' : 'text-slate-300 hover:bg-slate-900'" class="w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left text-sm transition-colors">
-                    <span x-text="t('⚙️ System Settings', '⚙️ ตั้งค่าคลังหลัก')"></span>
-                </button>
+                <!-- ซ่อนปุ่ม Settings สำหรับ Role User [ข้อ 2] -->
+                <template x-if="userRole === 'admin'">
+                    <button @click="page = 'settings'; sidebarOpen = false" :class="page === 'settings' ? 'bg-blue-600 text-white' : 'text-slate-300 hover:bg-slate-900'" class="w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left text-sm transition-colors">
+                        <span x-text="t('⚙️ System Settings', '⚙️ ตั้งค่าคลังหลัก')"></span>
+                    </button>
+                </template>
 
                 <!-- 5. ปุ่ม Avatar สิทธิ์และหน้าต่างแสดงคู่มือช่วยเหลือระบบ -->
                 <div class="pt-3 border-t border-slate-900 flex items-center justify-between">
@@ -218,14 +221,14 @@
                                 <div class="p-4 bg-slate-50 rounded-xl border border-slate-200 relative flex flex-col gap-3">
                                     <button @click="removeRow(idx)" class="absolute top-2 right-2 text-red-500 hover:text-red-700 text-sm">✕</button>
                                     
-                                    <!-- ฟังก์ชันค้นหาสินค้าจากช่องใดช่องหนึ่งเชื่อมต่อสคริปต์กรอกแบบ Autofill อัตโนมัติ -->
+                                    <!-- ฟังก์ชันค้นหาสินค้าจากช่องใดช่องหนึ่งเชื่อมต่อสคริปต์กรอกแบบ Autofill อัตโนมัติ [ข้อ 3] -->
                                     <div class="grid grid-cols-1 sm:grid-cols-12 gap-3 pt-3 sm:pt-0 items-end">
                                         <div class="sm:col-span-3">
                                             <label class="block text-[10px] font-bold text-slate-500 mb-1">หรือเลือกจากรหัสในคลังหลัก</label>
                                             <select x-model="row.itemId" @change="autoFillFromMaster(row)" class="w-full border border-slate-300 rounded-lg p-2 text-xs bg-white outline-none">
                                                 <option value="">-- ค้นหาในสต๊อก --</option>
                                                 <template x-for="item in inventory" :key="item.id">
-                                                    <option :value="item.id" x-text="item.itemCode + ' - ' + item.name"></option>
+                                                    <option :value="item.id" x-text="item.itemCode + ' - ' + item.name + ' (' + item.model + ')'"></option>
                                                 </template>
                                             </select>
                                         </div>
@@ -372,8 +375,8 @@
                     </div>
                 </div>
 
-                <!-- [D] หน้าตั้งค่าและจัดการข้อมูลหลัก (Settings) -->
-                <div x-show="page === 'settings'" class="space-y-8">
+                <!-- [D] หน้าตั้งค่าและจัดการข้อมูลหลัก (Settings) แสดงผลเฉพาะสิทธิ์ Admin [ข้อ 2] -->
+                <div x-show="page === 'settings' && userRole === 'admin'" class="space-y-8">
                     <div class="border-b border-slate-200 pb-4">
                         <!-- 1. ใช้ Logo และคำใต้ภาพ Christiani & Nielsen Energy Solutions เสมอ เมื่อแสดงเป็นหัวงาน -->
                         <div class="flex items-center space-x-3 mb-2">
