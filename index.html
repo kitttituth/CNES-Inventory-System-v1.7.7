@@ -582,18 +582,18 @@
         </div>
     </div>
 
-    <!-- [4] แผ่นสลิปพิมพ์เอกสารประวัติ (Print Sheet Template) - ปรับหัวกระดาษเพิ่ม Logo และขยายฟอนต์ [ข้อ 1, 3] -->
+    <!-- [4] แผ่นสลิปพิมพ์เอกสารประวัติ (Print Sheet Template) - ปรับเปลี่ยนชื่อบริษัทภาษาไทย และจัดวางลายเซ็นอยู่ล่างสุดเสมอกัน [ข้อ 1, 2, 3] -->
     <div x-show="printData" class="fixed inset-0 bg-white z-[120] p-8 flex flex-col justify-between" id="printable-area">
         <template x-if="printData">
-            <div class="flex flex-col h-full justify-between">
+            <div class="flex flex-col min-h-full justify-between">
                 
                 <div class="space-y-6">
-                    <!-- หัวกระดาษพิมพ์เอกสารใหม่ พร้อม Logo และขยายฟอนต์ชัดเจนเด่นชัด -->
+                    <!-- หัวกระดาษพิมพ์เอกสารใหม่ ภาษาไทยตามคำสั่ง [ข้อ 3] -->
                     <div class="flex justify-between items-center border-b-2 border-slate-900 pb-4">
                         <div class="flex items-center space-x-4">
                             <img src="logo.png" alt="CNES Logo" class="h-14 w-auto object-contain">
                             <div>
-                                <h1 class="text-2xl font-black text-slate-900 leading-tight">Christiani & Nielsen Energy Solutions (CNES)</h1>
+                                <h1 class="text-2xl font-black text-slate-900 leading-tight">บริษัท คริสเตียนีและนีลเส็น เอนเนอร์จี โซลูชันส์ จำกัด</h1>
                                 <p class="text-xs font-bold text-slate-500 uppercase tracking-wide mt-0.5">Christiani & Nielsen Energy Solutions Co., Ltd.</p>
                             </div>
                         </div>
@@ -640,15 +640,15 @@
                     </table>
                 </div>
 
-                <!-- ลายเซ็นเอกสารกำหนดอยู่ส่วนล่างสุดเสมอ -->
-                <div class="grid grid-cols-2 gap-8 pt-12 text-xs text-center border-t border-slate-200 mt-auto">
-                    <div class="space-y-8">
-                        <p>ผู้ทำรายการเบิก / รับสินค้า: ................................................................</p>
-                        <p x-text="'( ' + printData.user + ' )'"></p>
+                <!-- ช่องลายเซ็น กำหนดให้อยู่ล่างสุดเสมอ และจัดเสมอกันทั้งซ้ายและขวา [ข้อ 1, 2] -->
+                <div class="grid grid-cols-2 gap-12 pt-8 text-xs text-center border-t border-slate-300 mt-auto w-full">
+                    <div class="flex flex-col items-center justify-end space-y-6">
+                        <p class="font-bold">ผู้ทำรายการเบิก / รับสินค้า: ................................................................</p>
+                        <p class="font-semibold" x-text="'( ' + printData.user + ' )'"></p>
                     </div>
-                    <div class="space-y-8">
-                        <p>ผู้ตรวจสอบการปรับสต๊อกสินค้า: ................................................................</p>
-                        <p>( เจ้าหน้าที่คุมคลังและอนุมัติระบบแอดมิน )</p>
+                    <div class="flex flex-col items-center justify-end space-y-6">
+                        <p class="font-bold">ผู้ตรวจสอบการปรับสต๊อกสินค้า: ................................................................</p>
+                        <p class="font-semibold">( เจ้าหน้าที่คุมคลังและอนุมัติระบบแอดมิน )</p>
                     </div>
                 </div>
                 
