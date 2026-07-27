@@ -8,6 +8,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <script src="script.js"></script>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body class="bg-slate-50 font-sans antialiased text-slate-800" x-data="cnesApp()" x-init="initData()">
 
@@ -581,20 +582,24 @@
         </div>
     </div>
 
-    <!-- [4] แผ่นสลิปพิมพ์เอกสารประวัติ (Print Sheet Template) - จัดลายเซ็นไว้ที่ด้านล่างสุดเสมอตามรูปแบบเดิม -->
+    <!-- [4] แผ่นสลิปพิมพ์เอกสารประวัติ (Print Sheet Template) - ปรับหัวกระดาษเพิ่ม Logo และขยายฟอนต์ [ข้อ 1, 3] -->
     <div x-show="printData" class="fixed inset-0 bg-white z-[120] p-8 flex flex-col justify-between" id="printable-area">
         <template x-if="printData">
             <div class="flex flex-col h-full justify-between">
                 
                 <div class="space-y-6">
-                    <div class="flex justify-between items-start border-b-2 border-slate-900 pb-4">
-                        <div>
-                            <h1 class="text-xl font-black text-slate-900">CNES CORPORATION CO., LTD.</h1>
-                            <p class="text-[10px] text-slate-500">บริษัท ซีเอ็นอีเอส คอร์ปอเรชั่น จำกัด</p>
+                    <!-- หัวกระดาษพิมพ์เอกสารใหม่ พร้อม Logo และขยายฟอนต์ชัดเจนเด่นชัด -->
+                    <div class="flex justify-between items-center border-b-2 border-slate-900 pb-4">
+                        <div class="flex items-center space-x-4">
+                            <img src="logo.png" alt="CNES Logo" class="h-14 w-auto object-contain">
+                            <div>
+                                <h1 class="text-2xl font-black text-slate-900 leading-tight">Christiani & Nielsen Energy Solutions (CNES)</h1>
+                                <p class="text-xs font-bold text-slate-500 uppercase tracking-wide mt-0.5">Christiani & Nielsen Energy Solutions Co., Ltd.</p>
+                            </div>
                         </div>
                         <div class="text-right">
-                            <h2 class="text-md font-bold text-slate-800" x-text="printData.type + ' STOCK SLIP'"></h2>
-                            <p class="text-[10px] text-slate-400" x-text="'Ref ID: ' + printData.id"></p>
+                            <h2 class="text-lg font-black text-slate-900 tracking-wide" x-text="printData.type + ' STOCK SLIP'"></h2>
+                            <p class="text-xs font-mono font-bold text-slate-500 mt-0.5" x-text="'Ref ID: ' + printData.id"></p>
                         </div>
                     </div>
 
@@ -635,7 +640,7 @@
                     </table>
                 </div>
 
-                <!-- ลายเซ็นเอกสารกำหนดอยู่ส่วนล่างสุดเสมอ (ข้อที่ 2) -->
+                <!-- ลายเซ็นเอกสารกำหนดอยู่ส่วนล่างสุดเสมอ -->
                 <div class="grid grid-cols-2 gap-8 pt-12 text-xs text-center border-t border-slate-200 mt-auto">
                     <div class="space-y-8">
                         <p>ผู้ทำรายการเบิก / รับสินค้า: ................................................................</p>
@@ -651,13 +656,5 @@
         </template>
     </div>
 
-    <!-- สไตล์ควบคุมพิมพ์แผ่นใบสลิปเมื่อระบบเรียกสั่งพิมพ์ผ่านหน้าเว็บ -->
-    <style>
-        @media print {
-            body * { visibility: hidden !important; }
-            #printable-area, #printable-area * { visibility: visible !important; }
-            #printable-area { position: absolute !important; left: 0 !important; top: 0 !important; width: 100% !important; height: 100% !important; }
-        }
-    </style>
 </body>
 </html>
