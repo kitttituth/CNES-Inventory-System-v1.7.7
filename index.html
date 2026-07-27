@@ -582,14 +582,17 @@
         </div>
     </div>
 
-    <!-- [4] แผ่นสลิปพิมพ์เอกสารประวัติ (Print Sheet Template) - ปรับเปลี่ยนชื่อบริษัทภาษาไทย และจัดวางลายเซ็นอยู่ล่างสุดเสมอกัน [ข้อ 1, 2, 3] -->
+    <!-- [4] แผ่นสลิปพิมพ์เอกสารประวัติ (Print Sheet Template) -->
     <div x-show="printData" class="fixed inset-0 bg-white z-[120] p-8 flex flex-col justify-between" id="printable-area">
         <template x-if="printData">
-            <div class="flex flex-col min-h-full justify-between">
+            <div class="flex flex-col h-full justify-between">
                 
-                <div class="space-y-6">
-                    <!-- หัวกระดาษพิมพ์เอกสารใหม่ ภาษาไทยตามคำสั่ง [ข้อ 3] -->
-                    <div class="flex justify-between items-center border-b-2 border-slate-900 pb-4">
+                <!-- แถบสีน้ำเงินตกแต่งด้านบนตามสี Logo [ข้อ 2] -->
+                <div class="w-full h-1.5 bg-[#20336B] rounded-full mb-3"></div>
+
+                <div class="space-y-6 flex-1">
+                    <!-- หัวกระดาษพิมพ์เอกสารภาษาไทย -->
+                    <div class="flex justify-between items-center border-b-2 border-[#20336B] pb-4">
                         <div class="flex items-center space-x-4">
                             <img src="logo.png" alt="CNES Logo" class="h-14 w-auto object-contain">
                             <div>
@@ -598,7 +601,7 @@
                             </div>
                         </div>
                         <div class="text-right">
-                            <h2 class="text-lg font-black text-slate-900 tracking-wide" x-text="printData.type + ' STOCK SLIP'"></h2>
+                            <h2 class="text-lg font-black text-[#20336B] tracking-wide" x-text="printData.type + ' STOCK SLIP'"></h2>
                             <p class="text-xs font-mono font-bold text-slate-500 mt-0.5" x-text="'Ref ID: ' + printData.id"></p>
                         </div>
                     </div>
@@ -640,16 +643,27 @@
                     </table>
                 </div>
 
-                <!-- ช่องลายเซ็น กำหนดให้อยู่ล่างสุดเสมอ และจัดเสมอกันทั้งซ้ายและขวา [ข้อ 1, 2] -->
-                <div class="grid grid-cols-2 gap-12 pt-8 text-xs text-center border-t border-slate-300 mt-auto w-full">
-                    <div class="flex flex-col items-center justify-end space-y-6">
-                        <p class="font-bold">ผู้ทำรายการเบิก / รับสินค้า: ................................................................</p>
-                        <p class="font-semibold" x-text="'( ' + printData.user + ' )'"></p>
+                <!-- ช่องลายเซ็น ดันลงล่างสุด + เว้นพื้นที่ว่างสำหรับเซ็นลายมือเหนือเส้นประ [ข้อ 1, 2] -->
+                <div class="mt-auto pt-6 space-y-4">
+                    <div class="grid grid-cols-2 gap-12 text-xs text-center border-t border-slate-300 pt-6">
+                        <div class="flex flex-col items-center justify-end">
+                            <p class="font-bold text-slate-800">ผู้ทำรายการเบิก / รับสินค้า</p>
+                            <!-- เว้นพื้นที่ว่างสำหรับลงลายเซ็นจริงเหนือเส้นประ [ข้อ 1] -->
+                            <div class="h-16"></div>
+                            <p class="text-slate-400">................................................................</p>
+                            <p class="font-semibold text-slate-800 mt-2" x-text="'( ' + printData.user + ' )'"></p>
+                        </div>
+                        <div class="flex flex-col items-center justify-end">
+                            <p class="font-bold text-slate-800">ผู้ตรวจสอบการปรับสต๊อกสินค้า</p>
+                            <!-- เว้นพื้นที่ว่างสำหรับลงลายเซ็นจริงเหนือเส้นประ [ข้อ 1] -->
+                            <div class="h-16"></div>
+                            <p class="text-slate-400">................................................................</p>
+                            <p class="font-semibold text-slate-800 mt-2">( เจ้าหน้าที่คุมคลังและอนุมัติระบบแอดมิน )</p>
+                        </div>
                     </div>
-                    <div class="flex flex-col items-center justify-end space-y-6">
-                        <p class="font-bold">ผู้ตรวจสอบการปรับสต๊อกสินค้า: ................................................................</p>
-                        <p class="font-semibold">( เจ้าหน้าที่คุมคลังและอนุมัติระบบแอดมิน )</p>
-                    </div>
+
+                    <!-- แถบสีน้ำเงินตกแต่งล่างสุดของเอกสารตามสี Logo [ข้อ 2] -->
+                    <div class="w-full h-2 bg-[#20336B] rounded-full mt-4"></div>
                 </div>
                 
             </div>
